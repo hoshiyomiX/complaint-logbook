@@ -79,6 +79,14 @@ fun MainScreen() {
                 )
             )
         }
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { viewModel.toggleAddSheet(true) },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Tambah komplain")
+            }
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -160,17 +168,6 @@ fun MainScreen() {
             }
 
             Spacer(modifier = Modifier.height(80.dp))
-        }
-
-        // FAB
-        FloatingActionButton(
-            onClick = { viewModel.toggleAddSheet(true) },
-            modifier = Modifier
-                .padding(end = 16.dp, bottom = 16.dp)
-                .align(Alignment.BottomEnd),
-            containerColor = MaterialTheme.colorScheme.primary
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Tambah komplain")
         }
     }
 

@@ -3,7 +3,6 @@ package com.hoshiyomix.complaintlogbook.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.hoshiyomix.complaintlogbook.ComplaintApplication
@@ -238,7 +237,7 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val application = this[CreationExtras.Application] as ComplaintApplication
+                val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as ComplaintApplication
                 val repository = application.repository
                 ComplaintViewModel(repository)
             }
