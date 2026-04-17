@@ -1,0 +1,81 @@
+name: Release APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Decode Keystore
+        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --stacktrace
+        env:
+          KEYSTORE_FILE: release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Rename APK
+        run: |
+          mv app/build/outputs/apk/release/app-release.apk \
+            app/build/outputs/apk/release/complaint-logbook-${{ steps.version.outputs.VERSION }}.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Complaint Logbook v${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## Complaint Logbook v${{ steps.version.outputs.VERSION }}
+
+            Aplikasi logbook komplain tamu berbasis Android.
+
+            ### Cara Install
+            1. Download `complaint-logbook-${{ steps.version.outputs.VERSION }}.apk`
+            2. Buka file APK di perangkat Android
+            3. Izinkan install dari sumber tidak dikenal (jika diminta)
+
+            ### Fitur
+            - Kalender interaktif dengan dot indikator
+            - 4 period view: Harian / Mingguan / Bulanan / Tahunan
+            - Filter status: Semua / Aktif / Selesai
+            - Data persisten via Room database
+
+          files: app/build/outputs/apk/release/complaint-logbook-${{ steps.version.outputs.VERSION }}.apk
+          generate_release_notes: true
