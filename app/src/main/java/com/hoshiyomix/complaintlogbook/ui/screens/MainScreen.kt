@@ -78,7 +78,7 @@ fun MainScreen() {
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
-        }
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.toggleAddSheet(true) },
