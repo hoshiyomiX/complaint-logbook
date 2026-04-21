@@ -26,7 +26,7 @@ import java.util.*
 @Composable
 fun ComplaintItemCard(
     complaint: ComplaintEntity,
-    onCycleStatus: () -> Unit,
+    onChangeStatus: (newStatus: Int) -> Unit,
     onDelete: () -> Unit
 ) {
     val (categoryBg, categoryFg) = categoryColorFor(complaint.category)
@@ -34,14 +34,19 @@ fun ComplaintItemCard(
     val (statusColor, statusIcon, statusLabel) = statusInfoFor(complaint.status)
 
     val timeFormat = SimpleDateFormat("HH:mm, dd MMM yyyy", Locale("id", "ID"))
+    val scheduleFormat = SimpleDateFormat("HH:mm, dd MMM", Locale("id", "ID"))
 
-    val isCompleted = complaint.status == ComplaintStatus.COMPLETED
+    val isSelesai = complaint.status == ComplaintStatus.SELESAI
+    val isTidakSelesai = complaint.status == ComplaintStatus.TIDAK_SELESAI
+
+    // Status menu state — IMPL-003
+    var showStatusMenu by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isCompleted)
+            containerColor = if (isSelesai)
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             else MaterialTheme.colorScheme.surface
         )
@@ -50,33 +55,82 @@ fun ComplaintItemCard(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.Top
         ) {
-            // Status cycle button — IMPL-005
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(top = 2.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(statusColor.copy(alpha = 0.15f))
-                        .clickable { onCycleStatus() },
-                    contentAlignment = Alignment.Center
+            // ── Status button with dropdown menu ── IMPL-003
+            Box {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(top = 2.dp)
                 ) {
-                    Icon(
-                        statusIcon,
-                        contentDescription = statusLabel,
-                        modifier = Modifier.size(18.dp),
-                        tint = statusColor
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(statusColor.copy(alpha = 0.15f))
+                            .clickable { showStatusMenu = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            statusIcon,
+                            contentDescription = statusLabel,
+                            modifier = Modifier.size(18.dp),
+                            tint = statusColor
+                        )
+                    }
+                    Text(
+                        statusLabel,
+                        fontSize = 7.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = statusColor,
+                        modifier = Modifier.padding(top = 2.dp)
                     )
                 }
-                Text(
-                    statusLabel,
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = statusColor,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
+
+                // ── Status dropdown menu ── IMPL-003
+                DropdownMenu(
+                    expanded = showStatusMenu,
+                    onDismissRequest = { showStatusMenu = false }
+                ) {
+                    StatusMenuItem(
+                        icon = Icons.Default.Pending,
+                        label = "Belum Dikerjakan",
+                        color = MaterialTheme.colorScheme.primary,
+                        isSelected = complaint.status == ComplaintStatus.BELUM_DIKERJAKAN,
+                        onClick = {
+                            onChangeStatus(ComplaintStatus.BELUM_DIKERJAKAN)
+                            showStatusMenu = false
+                        }
+                    )
+                    StatusMenuItem(
+                        icon = Icons.Default.Schedule,
+                        label = "Tertunda",
+                        color = Color(0xFFFF9800),
+                        isSelected = complaint.status == ComplaintStatus.TERTUNDA,
+                        onClick = {
+                            onChangeStatus(ComplaintStatus.TERTUNDA)
+                            showStatusMenu = false
+                        }
+                    )
+                    StatusMenuItem(
+                        icon = Icons.Default.CheckCircle,
+                        label = "Selesai",
+                        color = Color(0xFF4CAF50),
+                        isSelected = complaint.status == ComplaintStatus.SELESAI,
+                        onClick = {
+                            onChangeStatus(ComplaintStatus.SELESAI)
+                            showStatusMenu = false
+                        }
+                    )
+                    StatusMenuItem(
+                        icon = Icons.Default.Cancel,
+                        label = "Tidak Selesai",
+                        color = Color(0xFFE53935),
+                        isSelected = complaint.status == ComplaintStatus.TIDAK_SELESAI,
+                        onClick = {
+                            onChangeStatus(ComplaintStatus.TIDAK_SELESAI)
+                            showStatusMenu = false
+                        }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(10.dp))
@@ -131,14 +185,15 @@ fun ComplaintItemCard(
                     complaint.description,
                     fontSize = 13.sp,
                     lineHeight = 18.sp,
-                    color = if (isCompleted)
+                    color = if (isSelesai || isTidakSelesai)
                         MaterialTheme.colorScheme.outline
                     else MaterialTheme.colorScheme.onSurface,
-                    textDecoration = if (isCompleted) TextDecoration.LineThrough else null
+                    textDecoration = if (isSelesai) TextDecoration.LineThrough else null
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
+                // ── Created time ──
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -168,6 +223,36 @@ fun ComplaintItemCard(
                         )
                     }
                 }
+
+                // ── Schedule display for Tertunda ── IMPL-003
+                complaint.scheduledAt?.let { scheduled ->
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFFFF9800).copy(alpha = 0.12f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Alarm,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = Color(0xFFFF9800)
+                            )
+                            val isOverdue = scheduled <= System.currentTimeMillis()
+                            Text(
+                                if (isOverdue) "Waktu tunda lewat: ${scheduleFormat.format(Date(scheduled))}"
+                                else "Ditunda sampai: ${scheduleFormat.format(Date(scheduled))}",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = if (isOverdue) Color(0xFFE53935) else Color(0xFFFF9800)
+                            )
+                        }
+                    }
+                }
             }
 
             // Delete button
@@ -186,22 +271,59 @@ fun ComplaintItemCard(
 }
 
 @Composable
+private fun StatusMenuItem(
+    icon: ImageVector,
+    label: String,
+    color: Color,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    DropdownMenuItem(
+        text = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = color)
+                Text(
+                    label,
+                    fontSize = 13.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isSelected) color else MaterialTheme.colorScheme.onSurface
+                )
+            }
+        },
+        onClick = onClick,
+        trailingIcon = {
+            if (isSelected) {
+                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = color)
+            }
+        }
+    )
+}
+
+@Composable
 private fun statusInfoFor(status: Int): Triple<Color, ImageVector, String> {
     return when (status) {
-        ComplaintStatus.ACTIVE -> Triple(
+        ComplaintStatus.BELUM_DIKERJAKAN -> Triple(
             MaterialTheme.colorScheme.primary,
-            Icons.Default.PlayArrow,
-            "Aktif"
+            Icons.Default.Pending,
+            "Belum"
         )
-        ComplaintStatus.PENDING -> Triple(
+        ComplaintStatus.TERTUNDA -> Triple(
             Color(0xFFFF9800),
-            Icons.Default.Pause,
-            "Tertunda"
+            Icons.Default.Schedule,
+            "Tunda"
         )
-        ComplaintStatus.COMPLETED -> Triple(
+        ComplaintStatus.SELESAI -> Triple(
             Color(0xFF4CAF50),
             Icons.Default.CheckCircle,
             "Selesai"
+        )
+        ComplaintStatus.TIDAK_SELESAI -> Triple(
+            Color(0xFFE53935),
+            Icons.Default.Cancel,
+            "Batal"
         )
         else -> Triple(
             Color.Gray,

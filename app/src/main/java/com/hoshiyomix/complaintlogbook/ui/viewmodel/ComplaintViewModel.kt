@@ -18,12 +18,13 @@ import java.util.*
 
 enum class PeriodView { DAY, WEEK, MONTH, YEAR }
 
-enum class StatusFilter { ALL, ACTIVE, PENDING, NOT_COMPLETED, COMPLETED }
+enum class StatusFilter { ALL, BELUM_DIKERJAKAN, TERTUNDA, TIDAK_SELESAI, SELESAI }
 
 data class DateMarkerInfo(
-    val activeCount: Int = 0,
-    val pendingCount: Int = 0,
-    val completedCount: Int = 0
+    val belumDikerjakanCount: Int = 0,
+    val tertundaCount: Int = 0,
+    val selesaiCount: Int = 0,
+    val tidakSelesaiCount: Int = 0
 )
 
 data class UiState(
@@ -39,10 +40,10 @@ data class UiState(
     val filteredComplaints: List<ComplaintEntity>
         get() = when (statusFilter) {
             StatusFilter.ALL -> complaints
-            StatusFilter.ACTIVE -> complaints.filter { it.status == ComplaintStatus.ACTIVE }
-            StatusFilter.PENDING -> complaints.filter { it.status == ComplaintStatus.PENDING }
-            StatusFilter.NOT_COMPLETED -> complaints.filter { it.status != ComplaintStatus.COMPLETED }
-            StatusFilter.COMPLETED -> complaints.filter { it.status == ComplaintStatus.COMPLETED }
+            StatusFilter.BELUM_DIKERJAKAN -> complaints.filter { it.status == ComplaintStatus.BELUM_DIKERJAKAN }
+            StatusFilter.TERTUNDA -> complaints.filter { it.status == ComplaintStatus.TERTUNDA }
+            StatusFilter.TIDAK_SELESAI -> complaints.filter { it.status == ComplaintStatus.TIDAK_SELESAI }
+            StatusFilter.SELESAI -> complaints.filter { it.status == ComplaintStatus.SELESAI }
         }
 
     val periodLabel: String
@@ -63,10 +64,10 @@ data class UiState(
             }
         }
 
-    val activeCount: Int get() = complaints.count { it.status == ComplaintStatus.ACTIVE }
-    val pendingCount: Int get() = complaints.count { it.status == ComplaintStatus.PENDING }
-    val notCompletedCount: Int get() = complaints.count { it.status != ComplaintStatus.COMPLETED }
-    val completedCount: Int get() = complaints.count { it.status == ComplaintStatus.COMPLETED }
+    val belumDikerjakanCount: Int get() = complaints.count { it.status == ComplaintStatus.BELUM_DIKERJAKAN }
+    val tertundaCount: Int get() = complaints.count { it.status == ComplaintStatus.TERTUNDA }
+    val tidakSelesaiCount: Int get() = complaints.count { it.status == ComplaintStatus.TIDAK_SELESAI }
+    val selesaiCount: Int get() = complaints.count { it.status == ComplaintStatus.SELESAI }
 
     fun getPeriodRange(): Pair<Long, Long> {
         val cal = selectedDate.clone() as Calendar
@@ -126,9 +127,10 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
                 val key = sdf.format(Date(m.createdAt))
                 val info = map.getOrPut(key) { DateMarkerInfo() }
                 map[key] = when (m.status) {
-                    ComplaintStatus.ACTIVE -> info.copy(activeCount = info.activeCount + 1)
-                    ComplaintStatus.PENDING -> info.copy(pendingCount = info.pendingCount + 1)
-                    ComplaintStatus.COMPLETED -> info.copy(completedCount = info.completedCount + 1)
+                    ComplaintStatus.BELUM_DIKERJAKAN -> info.copy(belumDikerjakanCount = info.belumDikerjakanCount + 1)
+                    ComplaintStatus.TERTUNDA -> info.copy(tertundaCount = info.tertundaCount + 1)
+                    ComplaintStatus.SELESAI -> info.copy(selesaiCount = info.selesaiCount + 1)
+                    ComplaintStatus.TIDAK_SELESAI -> info.copy(tidakSelesaiCount = info.tidakSelesaiCount + 1)
                     else -> info
                 }
             }
@@ -148,17 +150,6 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
 
     fun setStatusFilter(filter: StatusFilter) {
         _state.update { it.copy(statusFilter = filter) }
-    }
-
-    fun navigatePeriod(delta: Int) {
-        val cal = _state.value.selectedDate.clone() as Calendar
-        when (_state.value.periodView) {
-            PeriodView.DAY -> cal.add(Calendar.DAY_OF_MONTH, delta)
-            PeriodView.WEEK -> cal.add(Calendar.WEEK_OF_YEAR, delta)
-            PeriodView.MONTH -> cal.add(Calendar.MONTH, delta)
-            PeriodView.YEAR -> cal.add(Calendar.YEAR, delta)
-        }
-        selectDate(cal)
     }
 
     fun goToday() {
@@ -184,26 +175,23 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
         }
     }
 
-    fun cycleStatus(complaint: ComplaintEntity) {
+    /** Update status — for Tertunda, pass scheduledAt millis; otherwise null */
+    fun updateStatus(complaint: ComplaintEntity, newStatus: Int, scheduledAt: Long? = null) {
         viewModelScope.launch {
-            val nextStatus = when (complaint.status) {
-                ComplaintStatus.ACTIVE -> ComplaintStatus.PENDING
-                ComplaintStatus.PENDING -> ComplaintStatus.COMPLETED
-                ComplaintStatus.COMPLETED -> ComplaintStatus.ACTIVE
-                else -> ComplaintStatus.ACTIVE
-            }
             val updated = complaint.copy(
-                status = nextStatus,
-                completedAt = if (nextStatus == ComplaintStatus.COMPLETED) System.currentTimeMillis() else null
+                status = newStatus,
+                completedAt = if (newStatus == ComplaintStatus.SELESAI) System.currentTimeMillis() else null,
+                scheduledAt = if (newStatus == ComplaintStatus.TERTUNDA) scheduledAt else null
             )
             repository.update(updated)
             loadDateMarkers()
             refreshList()
             showSnackbar(
-                when (nextStatus) {
-                    ComplaintStatus.ACTIVE -> "Komplain dikembalikan ke aktif"
-                    ComplaintStatus.PENDING -> "Komplain ditandai tertunda"
-                    ComplaintStatus.COMPLETED -> "Komplain ditandai selesai"
+                when (newStatus) {
+                    ComplaintStatus.BELUM_DIKERJAKAN -> "Komplain dikembalikan ke Belum Dikerjakan"
+                    ComplaintStatus.TERTUNDA -> "Komplain ditandai Tertunda"
+                    ComplaintStatus.SELESAI -> "Komplain ditandai Selesai"
+                    ComplaintStatus.TIDAK_SELESAI -> "Komplain ditandai Tidak Selesai"
                     else -> "Status diperbarui"
                 }
             )

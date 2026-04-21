@@ -5,9 +5,10 @@ import androidx.room.PrimaryKey
 
 /** Status constants for complaint workflow */
 object ComplaintStatus {
-    const val ACTIVE = 0      // Aktif — newly reported, being worked on
-    const val PENDING = 1     // Tertunda — deferred / waiting for parts
-    const val COMPLETED = 2   // Selesai — resolved
+    const val BELUM_DIKERJAKAN = 0  // Belum Dikerjakan — newly created, not started
+    const val SELESAI = 1           // Selesai — completed / resolved
+    const val TERTUNDA = 2          // Tertunda — guest requests delay (has scheduledAt)
+    const val TIDAK_SELESAI = 3     // Tidak Selesai — cannot be resolved
 }
 
 @Entity(tableName = "complaints")
@@ -16,7 +17,8 @@ data class ComplaintEntity(
     val roomNumber: String,
     val category: String,
     val description: String,
-    val status: Int = ComplaintStatus.ACTIVE,
+    val status: Int = ComplaintStatus.BELUM_DIKERJAKAN,
     val createdAt: Long = System.currentTimeMillis(),
-    val completedAt: Long? = null
+    val completedAt: Long? = null,
+    val scheduledAt: Long? = null  // Only set when status == TERTUNDA
 )
