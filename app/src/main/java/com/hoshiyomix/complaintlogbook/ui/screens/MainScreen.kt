@@ -8,8 +8,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -128,11 +126,9 @@ fun MainScreen() {
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            // ── Period Navigation Bar with tap-to-show DatePicker ── IMPL-004
+            // ── Period Navigation Bar with tap-to-show DatePicker ── IMPL-001
             PeriodNavBar(
                 label = state.periodLabel,
-                onPrev = { viewModel.navigatePeriod(-1) },
-                onNext = { viewModel.navigatePeriod(1) },
                 onToday = viewModel::goToday,
                 onDateTap = { showDatePicker = true }
             )
@@ -207,54 +203,69 @@ fun MainScreen() {
     }
 }
 
-// ── Period Navigation Bar — tappable date label triggers DatePicker ──
+// ── Period Navigation Bar — tappable date + prominent "Hari Ini" ──
 @Composable
 private fun PeriodNavBar(
     label: String,
-    onPrev: () -> Unit,
-    onNext: () -> Unit,
     onToday: () -> Unit,
     onDateTap: () -> Unit
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .padding(horizontal = 4.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp)
     ) {
-        IconButton(onClick = onPrev, modifier = Modifier.size(36.dp)) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Prev")
-        }
-        // Tappable date label — IMPL-004
+        // Row 1: Tappable date label
         Row(
             modifier = Modifier
-                .weight(1f)
+                .fillMaxWidth()
                 .clickable { onDateTap() }
-                .padding(vertical = 6.dp),
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 Icons.Default.CalendarToday,
                 contentDescription = "Pilih tanggal",
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(18.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = label,
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center
             )
         }
-        TextButton(onClick = onToday) {
-            Text("Hari Ini", fontSize = 11.sp, fontWeight = FontWeight.Medium)
-        }
-        IconButton(onClick = onNext, modifier = Modifier.size(36.dp)) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next")
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Row 2: Prominent "Hari Ini" reset button — IMPL-002
+        OutlinedButton(
+            onClick = onToday,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                contentColor = MaterialTheme.colorScheme.primary
+            ),
+            border = ButtonDefaults.outlinedButtonBorder(enabled = true),
+            contentPadding = PaddingValues(vertical = 10.dp)
+        ) {
+            Icon(
+                Icons.Default.Today,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                "Hari Ini",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
