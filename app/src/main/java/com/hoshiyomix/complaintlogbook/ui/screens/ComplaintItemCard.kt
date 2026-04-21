@@ -1,6 +1,9 @@
 package com.hoshiyomix.complaintlogbook.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -8,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -15,25 +19,29 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hoshiyomix.complaintlogbook.data.local.ComplaintEntity
+import com.hoshiyomix.complaintlogbook.data.local.ComplaintStatus
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
 fun ComplaintItemCard(
     complaint: ComplaintEntity,
-    onToggleComplete: () -> Unit,
+    onCycleStatus: () -> Unit,
     onDelete: () -> Unit
 ) {
     val (categoryBg, categoryFg) = categoryColorFor(complaint.category)
     val categoryIcon = categoryIconFor(complaint.category)
+    val (statusColor, statusIcon, statusLabel) = statusInfoFor(complaint.status)
 
     val timeFormat = SimpleDateFormat("HH:mm, dd MMM yyyy", Locale("id", "ID"))
+
+    val isCompleted = complaint.status == ComplaintStatus.COMPLETED
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (complaint.isCompleted)
+            containerColor = if (isCompleted)
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             else MaterialTheme.colorScheme.surface
         )
@@ -42,14 +50,36 @@ fun ComplaintItemCard(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.Top
         ) {
-            // Checkbox
-            Checkbox(
-                checked = complaint.isCompleted,
-                onCheckedChange = { onToggleComplete() },
+            // Status cycle button — IMPL-005
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(top = 2.dp)
-            )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(statusColor.copy(alpha = 0.15f))
+                        .clickable { onCycleStatus() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        statusIcon,
+                        contentDescription = statusLabel,
+                        modifier = Modifier.size(18.dp),
+                        tint = statusColor
+                    )
+                }
+                Text(
+                    statusLabel,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = statusColor,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Row(
@@ -93,14 +123,6 @@ fun ComplaintItemCard(
                             )
                         }
                     }
-
-                    if (complaint.isCompleted) {
-                        Icon(
-                            Icons.Default.CheckCircle, contentDescription = "Selesai",
-                            modifier = Modifier.size(14.dp),
-                            tint = Color(0xFF4CAF50)
-                        )
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
@@ -109,10 +131,10 @@ fun ComplaintItemCard(
                     complaint.description,
                     fontSize = 13.sp,
                     lineHeight = 18.sp,
-                    color = if (complaint.isCompleted)
+                    color = if (isCompleted)
                         MaterialTheme.colorScheme.outline
                     else MaterialTheme.colorScheme.onSurface,
-                    textDecoration = if (complaint.isCompleted) TextDecoration.LineThrough else null
+                    textDecoration = if (isCompleted) TextDecoration.LineThrough else null
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -160,6 +182,32 @@ fun ComplaintItemCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun statusInfoFor(status: Int): Triple<Color, ImageVector, String> {
+    return when (status) {
+        ComplaintStatus.ACTIVE -> Triple(
+            MaterialTheme.colorScheme.primary,
+            Icons.Default.PlayArrow,
+            "Aktif"
+        )
+        ComplaintStatus.PENDING -> Triple(
+            Color(0xFFFF9800),
+            Icons.Default.Pause,
+            "Tertunda"
+        )
+        ComplaintStatus.COMPLETED -> Triple(
+            Color(0xFF4CAF50),
+            Icons.Default.CheckCircle,
+            "Selesai"
+        )
+        else -> Triple(
+            Color.Gray,
+            Icons.Default.Help,
+            "?"
+        )
     }
 }
 

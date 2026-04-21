@@ -1,6 +1,8 @@
 package com.hoshiyomix.complaintlogbook.ui.screens
 
+import java.util.Calendar
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,13 +16,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.hoshiyomix.complaintlogbook.data.local.ComplaintEntity
-import com.hoshiyomix.complaintlogbook.ui.components.CalendarGrid
+import com.hoshiyomix.complaintlogbook.data.local.ComplaintStatus
 import com.hoshiyomix.complaintlogbook.ui.viewmodel.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,7 +31,7 @@ fun MainScreen() {
     val viewModel: ComplaintViewModel = viewModel(factory = ComplaintViewModel.Factory)
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val selectedTab = remember { mutableIntStateOf(0) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     // Show snackbar when message changes
     LaunchedEffect(state.snackbarMessage) {
@@ -56,6 +58,37 @@ fun MainScreen() {
                 }
             }
         )
+    }
+
+    // Date Picker Dialog — IMPL-004
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = state.selectedDate.timeInMillis
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val cal = Calendar.getInstance()
+                            cal.timeInMillis = millis
+                            viewModel.selectDate(cal)
+                        }
+                        showDatePicker = false
+                    }
+                ) {
+                    Text("Pilih")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Batal")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
     }
 
     Scaffold(
@@ -93,44 +126,72 @@ fun MainScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .verticalScroll(rememberScrollState())
         ) {
-            // Tab Row — IMPL-001
-            val tabs = listOf("Daftar" to Icons.Default.List, "Kalender" to Icons.Default.CalendarMonth)
-            TabRow(
-                selectedTabIndex = selectedTab.intValue,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.primary,
-                divider = {
-                    HorizontalDivider(
-                        thickness = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant
+            // ── Period Navigation Bar with tap-to-show DatePicker ── IMPL-004
+            PeriodNavBar(
+                label = state.periodLabel,
+                onPrev = { viewModel.navigatePeriod(-1) },
+                onNext = { viewModel.navigatePeriod(1) },
+                onToday = viewModel::goToday,
+                onDateTap = { showDatePicker = true }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ── Period View Tabs ──
+            PeriodViewTabs(
+                selected = state.periodView,
+                onSelect = viewModel::setPeriodView
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ── Stats Counters — 5 counters, tap-to-filter ── IMPL-004
+            StatsRow(
+                totalCount = state.complaints.size,
+                activeCount = state.activeCount,
+                pendingCount = state.pendingCount,
+                notCompletedCount = state.notCompletedCount,
+                completedCount = state.completedCount,
+                selectedFilter = state.statusFilter,
+                onFilterTap = viewModel::setStatusFilter
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ── Complaint count label ──
+            Text(
+                "${state.filteredComplaints.size} komplain" +
+                    when (state.statusFilter) {
+                        StatusFilter.ACTIVE -> " (aktif)"
+                        StatusFilter.PENDING -> " (tertunda)"
+                        StatusFilter.NOT_COMPLETED -> " (tidak selesai)"
+                        StatusFilter.COMPLETED -> " (selesai)"
+                        StatusFilter.ALL -> ""
+                    },
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ── Complaint List or Empty State ── IMPL-004 (centered empty state)
+            if (state.filteredComplaints.isEmpty()) {
+                EmptyState(statusFilter = state.statusFilter)
+            } else {
+                state.filteredComplaints.forEach { complaint ->
+                    ComplaintItemCard(
+                        complaint = complaint,
+                        onCycleStatus = { viewModel.cycleStatus(complaint) },
+                        onDelete = { viewModel.requestDelete(complaint.id) }
                     )
-                }
-            ) {
-                tabs.forEachIndexed { index, (title, icon) ->
-                    Tab(
-                        selected = selectedTab.intValue == index,
-                        onClick = { selectedTab.intValue = index },
-                        text = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(icon, contentDescription = title, modifier = Modifier.size(18.dp))
-                                Text(title, fontWeight = FontWeight.Medium, fontSize = 13.sp)
-                            }
-                        },
-                        selectedContentColor = MaterialTheme.colorScheme.primary,
-                        unselectedContentColor = MaterialTheme.colorScheme.outline
-                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
 
-            // Tab Content — IMPL-001 (swapped: Daftar=0, Kalender=1)
-            when (selectedTab.intValue) {
-                0 -> TaskListTabContent(state, viewModel)
-                1 -> CalendarTabContent(state, viewModel)
-            }
+            Spacer(modifier = Modifier.height(80.dp))
         }
     }
 
@@ -146,122 +207,55 @@ fun MainScreen() {
     }
 }
 
-// IMPL-001: Calendar tab — period view, nav bar, calendar, stats
+// ── Period Navigation Bar — tappable date label triggers DatePicker ──
 @Composable
-private fun CalendarTabContent(state: UiState, viewModel: ComplaintViewModel) {
-    Column(
+private fun PeriodNavBar(
+    label: String,
+    onPrev: () -> Unit,
+    onNext: () -> Unit,
+    onToday: () -> Unit,
+    onDateTap: () -> Unit
+) {
+    Row(
         modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Period View Tabs
-        PeriodViewTabs(
-            selected = state.periodView,
-            onSelect = viewModel::setPeriodView
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Navigation bar
-        PeriodNavBar(
-            label = state.periodLabel,
-            onPrev = { viewModel.navigatePeriod(-1) },
-            onNext = { viewModel.navigatePeriod(1) },
-            onToday = viewModel::goToday
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Calendar
-        CalendarGrid(
-            calendarMonth = state.calendarMonth,
-            selectedDate = state.selectedDate,
-            dateMarkers = state.dateMarkers,
-            onDaySelected = viewModel::selectDate,
-            onMonthChanged = viewModel::setCalendarMonth
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Stats
-        StatsRow(
-            total = state.complaints.size,
-            active = state.activeCount,
-            completed = state.completedCount
-        )
-
-        Spacer(modifier = Modifier.height(80.dp))
-    }
-}
-
-// IMPL-001: Task list tab — status filter, complaint count, complaint list
-@Composable
-private fun TaskListTabContent(state: UiState, viewModel: ComplaintViewModel) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp)
-    ) {
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Period summary label
-        PeriodNavBar(
-            label = state.periodLabel,
-            onPrev = { viewModel.navigatePeriod(-1) },
-            onNext = { viewModel.navigatePeriod(1) },
-            onToday = viewModel::goToday
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Stats
-        StatsRow(
-            total = state.complaints.size,
-            active = state.activeCount,
-            completed = state.completedCount
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Status Filter
-        StatusFilterTabs(
-            selected = state.statusFilter,
-            onSelect = viewModel::setStatusFilter
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Complaint count label
-        Text(
-            "${state.filteredComplaints.size} komplain" +
-                if (state.statusFilter != StatusFilter.ALL)
-                    " (${if (state.statusFilter == StatusFilter.ACTIVE) "aktif" else "selesai"})"
-                else "",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.outline
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Complaint list
-        if (state.filteredComplaints.isEmpty()) {
-            EmptyState(statusFilter = state.statusFilter)
-        } else {
-            state.filteredComplaints.forEach { complaint ->
-                ComplaintItemCard(
-                    complaint = complaint,
-                    onToggleComplete = { viewModel.toggleComplete(complaint) },
-                    onDelete = { viewModel.requestDelete(complaint.id) }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+        IconButton(onClick = onPrev, modifier = Modifier.size(36.dp)) {
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Prev")
         }
-
-        Spacer(modifier = Modifier.height(80.dp))
+        // Tappable date label — IMPL-004
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clickable { onDateTap() }
+                .padding(vertical = 6.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.CalendarToday,
+                contentDescription = "Pilih tanggal",
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = label,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center
+            )
+        }
+        TextButton(onClick = onToday) {
+            Text("Hari Ini", fontSize = 11.sp, fontWeight = FontWeight.Medium)
+        }
+        IconButton(onClick = onNext, modifier = Modifier.size(36.dp)) {
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next")
+        }
     }
 }
 
@@ -277,6 +271,7 @@ private fun PeriodViewTabs(selected: PeriodView, onSelect: (PeriodView) -> Unit)
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 16.dp)
             .background(
                 MaterialTheme.colorScheme.surface,
                 RoundedCornerShape(12.dp)
@@ -306,125 +301,152 @@ private fun PeriodViewTabs(selected: PeriodView, onSelect: (PeriodView) -> Unit)
     }
 }
 
+// ── Stats Row — 5 counters, tappable to filter ── IMPL-004
 @Composable
-private fun PeriodNavBar(label: String, onPrev: () -> Unit, onNext: () -> Unit, onToday: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .padding(horizontal = 8.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+private fun StatsRow(
+    totalCount: Int,
+    activeCount: Int,
+    pendingCount: Int,
+    notCompletedCount: Int,
+    completedCount: Int,
+    selectedFilter: StatusFilter,
+    onFilterTap: (StatusFilter) -> Unit
+) {
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        IconButton(onClick = onPrev, modifier = Modifier.size(36.dp)) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Prev")
+        // Row 1: Total, Aktif, Tertunda
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterableStatCard(
+                modifier = Modifier.weight(1f),
+                value = totalCount,
+                label = "Total",
+                color = MaterialTheme.colorScheme.onSurface,
+                isSelected = selectedFilter == StatusFilter.ALL,
+                onTap = { onFilterTap(StatusFilter.ALL) }
+            )
+            FilterableStatCard(
+                modifier = Modifier.weight(1f),
+                value = activeCount,
+                label = "Aktif",
+                color = MaterialTheme.colorScheme.primary,
+                isSelected = selectedFilter == StatusFilter.ACTIVE,
+                onTap = { onFilterTap(StatusFilter.ACTIVE) }
+            )
+            FilterableStatCard(
+                modifier = Modifier.weight(1f),
+                value = pendingCount,
+                label = "Tertunda",
+                color = Color(0xFFFF9800),
+                isSelected = selectedFilter == StatusFilter.PENDING,
+                onTap = { onFilterTap(StatusFilter.PENDING) }
+            )
         }
-        Text(
-            text = label,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        TextButton(onClick = onToday) {
-            Text("Hari Ini", fontSize = 11.sp, fontWeight = FontWeight.Medium)
-        }
-        IconButton(onClick = onNext, modifier = Modifier.size(36.dp)) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next")
+        // Row 2: Tidak Selesai, Selesai
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterableStatCard(
+                modifier = Modifier.weight(1f),
+                value = notCompletedCount,
+                label = "Tidak Selesai",
+                color = Color(0xFFE53935),
+                isSelected = selectedFilter == StatusFilter.NOT_COMPLETED,
+                onTap = { onFilterTap(StatusFilter.NOT_COMPLETED) }
+            )
+            FilterableStatCard(
+                modifier = Modifier.weight(1f),
+                value = completedCount,
+                label = "Selesai",
+                color = Color(0xFF4CAF50),
+                isSelected = selectedFilter == StatusFilter.COMPLETED,
+                onTap = { onFilterTap(StatusFilter.COMPLETED) }
+            )
         }
     }
 }
 
 @Composable
-private fun StatsRow(total: Int, active: Int, completed: Int) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        StatCard(modifier = Modifier.weight(1f), value = total, label = "Total", color = MaterialTheme.colorScheme.onSurface)
-        StatCard(modifier = Modifier.weight(1f), value = active, label = "Aktif", color = MaterialTheme.colorScheme.primary)
-        StatCard(modifier = Modifier.weight(1f), value = completed, label = "Selesai", color = Color(0xFF4CAF50))
-    }
-}
-
-@Composable
-private fun StatCard(modifier: Modifier, value: Int, label: String, color: Color) {
+private fun FilterableStatCard(
+    modifier: Modifier = Modifier,
+    value: Int,
+    label: String,
+    color: Color,
+    isSelected: Boolean,
+    onTap: () -> Unit
+) {
     Card(
-        modifier = modifier,
+        modifier = modifier.clickable { onTap() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected)
+                color.copy(alpha = 0.12f)
+            else MaterialTheme.colorScheme.surface
+        ),
+        border = if (isSelected) CardDefaults.outlinedCardBorder() else null
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(value.toString(), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = color)
-            Text(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.outline)
-        }
-    }
-}
-
-@Composable
-private fun StatusFilterTabs(selected: StatusFilter, onSelect: (StatusFilter) -> Unit) {
-    val labels = mapOf(
-        StatusFilter.ALL to "Semua",
-        StatusFilter.ACTIVE to "Aktif",
-        StatusFilter.COMPLETED to "Selesai"
-    )
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        StatusFilter.entries.forEach { filter ->
-            Button(
-                onClick = { onSelect(filter) },
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (filter == selected)
-                        MaterialTheme.colorScheme.onSurface
-                    else Color.Transparent,
-                    contentColor = if (filter == selected)
-                        MaterialTheme.colorScheme.surface
-                    else MaterialTheme.colorScheme.outline
-                ),
-                shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(vertical = 6.dp),
-                elevation = ButtonDefaults.buttonElevation(0.dp)
-            ) {
-                Text(labels[filter] ?: "", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-            }
+            Text(
+                value.toString(),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) color else color
+            )
+            Text(
+                label,
+                fontSize = 9.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = if (isSelected) color else MaterialTheme.colorScheme.outline
+            )
         }
     }
 }
 
 @Composable
 private fun EmptyState(statusFilter: StatusFilter) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    // IMPL-004: Centered empty state
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 48.dp),
+        contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier.padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                if (statusFilter == StatusFilter.ACTIVE) Icons.Default.CheckCircle
-                else Icons.Default.Build,
+                when (statusFilter) {
+                    StatusFilter.ACTIVE -> Icons.Default.CheckCircle
+                    StatusFilter.PENDING -> Icons.Default.Schedule
+                    StatusFilter.NOT_COMPLETED -> Icons.Default.AssignmentTurnedIn
+                    StatusFilter.COMPLETED -> Icons.Default.Build
+                    StatusFilter.ALL -> Icons.Default.Inbox
+                },
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.outline
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                if (statusFilter == StatusFilter.ACTIVE) "Semua komplain sudah selesai!"
-                else "Tidak ada komplain di periode ini",
+                when (statusFilter) {
+                    StatusFilter.ACTIVE -> "Semua komplain sudah ditangani!"
+                    StatusFilter.PENDING -> "Tidak ada komplain tertunda"
+                    StatusFilter.NOT_COMPLETED -> "Semua komplain sudah selesai!"
+                    StatusFilter.COMPLETED -> "Belum ada komplain yang selesai"
+                    StatusFilter.ALL -> "Tidak ada komplain di periode ini"
+                },
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.outline
+                color = MaterialTheme.colorScheme.outline,
+                textAlign = TextAlign.Center
             )
         }
     }

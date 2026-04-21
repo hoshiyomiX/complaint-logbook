@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.hoshiyomix.complaintlogbook.ComplaintApplication
 import com.hoshiyomix.complaintlogbook.data.local.ComplaintEntity
+import com.hoshiyomix.complaintlogbook.data.local.ComplaintStatus
 import com.hoshiyomix.complaintlogbook.data.local.DateMarkerTuple
 import com.hoshiyomix.complaintlogbook.data.repository.ComplaintRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,13 +17,19 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 enum class PeriodView { DAY, WEEK, MONTH, YEAR }
-enum class StatusFilter { ALL, ACTIVE, COMPLETED }
+
+enum class StatusFilter { ALL, ACTIVE, PENDING, NOT_COMPLETED, COMPLETED }
+
+data class DateMarkerInfo(
+    val activeCount: Int = 0,
+    val pendingCount: Int = 0,
+    val completedCount: Int = 0
+)
 
 data class UiState(
     val complaints: List<ComplaintEntity> = emptyList(),
-    val dateMarkers: Map<String, IntArray> = emptyMap(),
+    val dateMarkers: Map<String, DateMarkerInfo> = emptyMap(),
     val selectedDate: Calendar = Calendar.getInstance(),
-    val calendarMonth: Calendar = Calendar.getInstance(),
     val periodView: PeriodView = PeriodView.DAY,
     val statusFilter: StatusFilter = StatusFilter.ALL,
     val isAddSheetOpen: Boolean = false,
@@ -31,14 +38,15 @@ data class UiState(
 ) {
     val filteredComplaints: List<ComplaintEntity>
         get() = when (statusFilter) {
-            StatusFilter.ACTIVE -> complaints.filter { !it.isCompleted }
-            StatusFilter.COMPLETED -> complaints.filter { it.isCompleted }
             StatusFilter.ALL -> complaints
+            StatusFilter.ACTIVE -> complaints.filter { it.status == ComplaintStatus.ACTIVE }
+            StatusFilter.PENDING -> complaints.filter { it.status == ComplaintStatus.PENDING }
+            StatusFilter.NOT_COMPLETED -> complaints.filter { it.status != ComplaintStatus.COMPLETED }
+            StatusFilter.COMPLETED -> complaints.filter { it.status == ComplaintStatus.COMPLETED }
         }
 
     val periodLabel: String
         get() {
-            val sdf = SimpleDateFormat("MMMM yyyy", Locale("id", "ID"))
             val sdfDay = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale("id", "ID"))
             return when (periodView) {
                 PeriodView.DAY -> sdfDay.format(selectedDate.time)
@@ -50,13 +58,15 @@ data class UiState(
                     val fmt = SimpleDateFormat("dd MMM", Locale("id", "ID"))
                     "${fmt.format(start.time)} \u2014 ${fmt.format(end.time)} ${end[Calendar.YEAR]}"
                 }
-                PeriodView.MONTH -> sdf.format(selectedDate.time)
+                PeriodView.MONTH -> SimpleDateFormat("MMMM yyyy", Locale("id", "ID")).format(selectedDate.time)
                 PeriodView.YEAR -> "${selectedDate[Calendar.YEAR]}"
             }
         }
 
-    val activeCount: Int get() = complaints.count { !it.isCompleted }
-    val completedCount: Int get() = complaints.count { it.isCompleted }
+    val activeCount: Int get() = complaints.count { it.status == ComplaintStatus.ACTIVE }
+    val pendingCount: Int get() = complaints.count { it.status == ComplaintStatus.PENDING }
+    val notCompletedCount: Int get() = complaints.count { it.status != ComplaintStatus.COMPLETED }
+    val completedCount: Int get() = complaints.count { it.status == ComplaintStatus.COMPLETED }
 
     fun getPeriodRange(): Pair<Long, Long> {
         val cal = selectedDate.clone() as Calendar
@@ -110,25 +120,24 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
     private fun loadDateMarkers() {
         viewModelScope.launch {
             val markers = repository.getDateMarkers()
-            val map = mutableMapOf<String, IntArray>()
+            val map = mutableMapOf<String, DateMarkerInfo>()
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             for (m in markers) {
                 val key = sdf.format(Date(m.createdAt))
-                val arr = map.getOrPut(key) { intArrayOf(0, 0) }
-                if (m.isCompleted) arr[1]++ else arr[0]++
+                val info = map.getOrPut(key) { DateMarkerInfo() }
+                map[key] = when (m.status) {
+                    ComplaintStatus.ACTIVE -> info.copy(activeCount = info.activeCount + 1)
+                    ComplaintStatus.PENDING -> info.copy(pendingCount = info.pendingCount + 1)
+                    ComplaintStatus.COMPLETED -> info.copy(completedCount = info.completedCount + 1)
+                    else -> info
+                }
             }
             _state.update { it.copy(dateMarkers = map) }
         }
     }
 
     fun selectDate(date: Calendar) {
-        val cal = date.clone() as Calendar
-        _state.update {
-            it.copy(
-                selectedDate = cal,
-                calendarMonth = (cal.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, 1) }
-            )
-        }
+        _state.update { it.copy(selectedDate = date.clone() as Calendar) }
         refreshList()
     }
 
@@ -139,12 +148,6 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
 
     fun setStatusFilter(filter: StatusFilter) {
         _state.update { it.copy(statusFilter = filter) }
-    }
-
-    fun setCalendarMonth(delta: Int) {
-        val cal = _state.value.calendarMonth.clone() as Calendar
-        cal.add(Calendar.MONTH, delta)
-        _state.update { it.copy(calendarMonth = cal) }
     }
 
     fun navigatePeriod(delta: Int) {
@@ -181,18 +184,28 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
         }
     }
 
-    fun toggleComplete(complaint: ComplaintEntity) {
+    fun cycleStatus(complaint: ComplaintEntity) {
         viewModelScope.launch {
+            val nextStatus = when (complaint.status) {
+                ComplaintStatus.ACTIVE -> ComplaintStatus.PENDING
+                ComplaintStatus.PENDING -> ComplaintStatus.COMPLETED
+                ComplaintStatus.COMPLETED -> ComplaintStatus.ACTIVE
+                else -> ComplaintStatus.ACTIVE
+            }
             val updated = complaint.copy(
-                isCompleted = !complaint.isCompleted,
-                completedAt = if (!complaint.isCompleted) System.currentTimeMillis() else null
+                status = nextStatus,
+                completedAt = if (nextStatus == ComplaintStatus.COMPLETED) System.currentTimeMillis() else null
             )
             repository.update(updated)
             loadDateMarkers()
             refreshList()
             showSnackbar(
-                if (updated.isCompleted) "Komplain ditandai selesai"
-                else "Komplain dikembalikan ke aktif"
+                when (nextStatus) {
+                    ComplaintStatus.ACTIVE -> "Komplain dikembalikan ke aktif"
+                    ComplaintStatus.PENDING -> "Komplain ditandai tertunda"
+                    ComplaintStatus.COMPLETED -> "Komplain ditandai selesai"
+                    else -> "Status diperbarui"
+                }
             )
         }
     }
