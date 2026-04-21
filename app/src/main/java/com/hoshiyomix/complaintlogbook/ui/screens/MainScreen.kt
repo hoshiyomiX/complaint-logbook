@@ -29,6 +29,7 @@ fun MainScreen() {
     val viewModel: ComplaintViewModel = viewModel(factory = ComplaintViewModel.Factory)
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val selectedTab = remember { mutableIntStateOf(0) }
 
     // Show snackbar when message changes
     LaunchedEffect(state.snackbarMessage) {
@@ -92,82 +93,44 @@ fun MainScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
         ) {
-            // Period View Tabs
-            PeriodViewTabs(
-                selected = state.periodView,
-                onSelect = viewModel::setPeriodView
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Navigation bar
-            PeriodNavBar(
-                label = state.periodLabel,
-                onPrev = { viewModel.navigatePeriod(-1) },
-                onNext = { viewModel.navigatePeriod(1) },
-                onToday = viewModel::goToday
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Calendar
-            CalendarGrid(
-                calendarMonth = state.calendarMonth,
-                selectedDate = state.selectedDate,
-                dateMarkers = state.dateMarkers,
-                onDaySelected = viewModel::selectDate,
-                onMonthChanged = viewModel::setCalendarMonth
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Stats
-            StatsRow(
-                total = state.complaints.size,
-                active = state.activeCount,
-                completed = state.completedCount
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Status Filter
-            StatusFilterTabs(
-                selected = state.statusFilter,
-                onSelect = viewModel::setStatusFilter
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Complaint count label
-            Text(
-                "${state.filteredComplaints.size} komplain" +
-                    if (state.statusFilter != StatusFilter.ALL)
-                        " (${if (state.statusFilter == StatusFilter.ACTIVE) "aktif" else "selesai"})"
-                    else "",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Complaint list
-            if (state.filteredComplaints.isEmpty()) {
-                EmptyState(statusFilter = state.statusFilter)
-            } else {
-                state.filteredComplaints.forEach { complaint ->
-                    ComplaintItemCard(
-                        complaint = complaint,
-                        onToggleComplete = { viewModel.toggleComplete(complaint) },
-                        onDelete = { viewModel.requestDelete(complaint.id) }
+            // Tab Row — IMPL-001
+            val tabs = listOf("Kalender" to Icons.Default.CalendarMonth, "Daftar" to Icons.Default.List)
+            TabRow(
+                selectedTabIndex = selectedTab.intValue,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary,
+                divider = {
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            ) {
+                tabs.forEachIndexed { index, (title, icon) ->
+                    Tab(
+                        selected = selectedTab.intValue == index,
+                        onClick = { selectedTab.intValue = index },
+                        text = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(icon, contentDescription = title, modifier = Modifier.size(18.dp))
+                                Text(title, fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                            }
+                        },
+                        selectedContentColor = MaterialTheme.colorScheme.primary,
+                        unselectedContentColor = MaterialTheme.colorScheme.outline
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(80.dp))
+            // Tab Content — IMPL-001
+            when (selectedTab.intValue) {
+                0 -> CalendarTabContent(state, viewModel)
+                1 -> TaskListTabContent(state, viewModel)
+            }
         }
     }
 
@@ -180,6 +143,125 @@ fun MainScreen() {
                 viewModel.toggleAddSheet(false)
             }
         )
+    }
+}
+
+// IMPL-001: Calendar tab — period view, nav bar, calendar, stats
+@Composable
+private fun CalendarTabContent(state: UiState, viewModel: ComplaintViewModel) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp)
+    ) {
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Period View Tabs
+        PeriodViewTabs(
+            selected = state.periodView,
+            onSelect = viewModel::setPeriodView
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Navigation bar
+        PeriodNavBar(
+            label = state.periodLabel,
+            onPrev = { viewModel.navigatePeriod(-1) },
+            onNext = { viewModel.navigatePeriod(1) },
+            onToday = viewModel::goToday
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Calendar
+        CalendarGrid(
+            calendarMonth = state.calendarMonth,
+            selectedDate = state.selectedDate,
+            dateMarkers = state.dateMarkers,
+            onDaySelected = viewModel::selectDate,
+            onMonthChanged = viewModel::setCalendarMonth
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Stats
+        StatsRow(
+            total = state.complaints.size,
+            active = state.activeCount,
+            completed = state.completedCount
+        )
+
+        Spacer(modifier = Modifier.height(80.dp))
+    }
+}
+
+// IMPL-001: Task list tab — status filter, complaint count, complaint list
+@Composable
+private fun TaskListTabContent(state: UiState, viewModel: ComplaintViewModel) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp)
+    ) {
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Period summary label
+        PeriodNavBar(
+            label = state.periodLabel,
+            onPrev = { viewModel.navigatePeriod(-1) },
+            onNext = { viewModel.navigatePeriod(1) },
+            onToday = viewModel::goToday
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Stats
+        StatsRow(
+            total = state.complaints.size,
+            active = state.activeCount,
+            completed = state.completedCount
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Status Filter
+        StatusFilterTabs(
+            selected = state.statusFilter,
+            onSelect = viewModel::setStatusFilter
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Complaint count label
+        Text(
+            "${state.filteredComplaints.size} komplain" +
+                if (state.statusFilter != StatusFilter.ALL)
+                    " (${if (state.statusFilter == StatusFilter.ACTIVE) "aktif" else "selesai"})"
+                else "",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Complaint list
+        if (state.filteredComplaints.isEmpty()) {
+            EmptyState(statusFilter = state.statusFilter)
+        } else {
+            state.filteredComplaints.forEach { complaint ->
+                ComplaintItemCard(
+                    complaint = complaint,
+                    onToggleComplete = { viewModel.toggleComplete(complaint) },
+                    onDelete = { viewModel.requestDelete(complaint.id) }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(80.dp))
     }
 }
 
