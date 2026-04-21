@@ -95,7 +95,7 @@ fun MainScreen() {
                 .padding(padding)
         ) {
             // Tab Row — IMPL-001
-            val tabs = listOf("Kalender" to Icons.Default.CalendarMonth, "Daftar" to Icons.Default.List)
+            val tabs = listOf("Daftar" to Icons.Default.List, "Kalender" to Icons.Default.CalendarMonth)
             TabRow(
                 selectedTabIndex = selectedTab.intValue,
                 containerColor = MaterialTheme.colorScheme.surface,
@@ -126,10 +126,10 @@ fun MainScreen() {
                 }
             }
 
-            // Tab Content — IMPL-001
+            // Tab Content — IMPL-001 (swapped: Daftar=0, Kalender=1)
             when (selectedTab.intValue) {
-                0 -> CalendarTabContent(state, viewModel)
-                1 -> TaskListTabContent(state, viewModel)
+                0 -> TaskListTabContent(state, viewModel)
+                1 -> CalendarTabContent(state, viewModel)
             }
         }
     }
