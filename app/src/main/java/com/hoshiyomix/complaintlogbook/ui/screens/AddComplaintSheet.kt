@@ -1,7 +1,9 @@
 package com.hoshiyomix.complaintlogbook.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -12,9 +14,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-val CATEGORIES = listOf("AC", "Lampu", "Kebersihan", "Air", "TV / WiFi", "Lainnya")
+val CATEGORIES = listOf(
+    "AC", "Lampu", "Air", "Shower", "Toilet",
+    "Washtafel / Sink", "Exhaust Fan", "Stove", "Fridge",
+    "Door", "Chair", "Table", "SDB", "Wadrobe", "Lainnya"
+)
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AddComplaintSheet(
     onDismiss: () -> Unit,
@@ -34,6 +40,7 @@ fun AddComplaintSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp)
         ) {
@@ -81,10 +88,10 @@ fun AddComplaintSheet(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Custom category selector
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            // FlowRow category selector — wraps to multiple lines
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 CATEGORIES.forEach { cat ->
                     FilterChip(

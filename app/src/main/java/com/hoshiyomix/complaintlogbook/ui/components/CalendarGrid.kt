@@ -1,6 +1,7 @@
 package com.hoshiyomix.complaintlogbook.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.text.SimpleDateFormat
@@ -35,30 +37,38 @@ fun CalendarGrid(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            // Month header
+        Column(modifier = Modifier.padding(16.dp)) {
+            // ── Month header with navigation ──
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { onMonthChanged(-1) }, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Prev month")
+                IconButton(onClick = { onMonthChanged(-1) }) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        contentDescription = "Bulan sebelumnya"
+                    )
                 }
                 Text(
-                    text = SimpleDateFormat("MMMM yyyy", Locale("id", "ID")).format(calendarMonth.time),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    text = SimpleDateFormat("MMMM yyyy", Locale("id", "ID"))
+                        .format(calendarMonth.time)
+                        .replaceFirstChar { it.uppercase() },
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                IconButton(onClick = { onMonthChanged(1) }, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next month")
+                IconButton(onClick = { onMonthChanged(1) }) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "Bulan berikutnya"
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Weekday headers — Monday-first to match grid offset logic
+            // ── Weekday headers — Monday-first ──
             val dayLabels = listOf("Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min")
             Row(modifier = Modifier.fillMaxWidth()) {
                 dayLabels.forEach { label ->
@@ -68,27 +78,33 @@ fun CalendarGrid(
                     ) {
                         Text(
                             text = label,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.outline
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.outline,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Day cells
+            // ── Day cells ──
             val days = getCalendarDays(calendarMonth)
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val weeks = days.chunked(7)
 
-            Column {
-                days.chunked(7).forEach { week ->
-                    Row(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                weeks.forEach { week ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
                         week.forEach { day ->
                             val dateStr = sdf.format(day.time)
                             val markers = dateMarkers[dateStr]
-                            val hasComplaint = markers != null && (markers[0] + markers[1] > 0)
+                            val hasActive = markers != null && markers[0] > 0
+                            val hasCompleted = markers != null && markers[1] > 0
                             val isSelected = sameDay(day, selectedDate)
                             val isToday = sameDay(day, today)
                             val isCurrentMonth = sameMonth(day, calendarMonth)
@@ -96,34 +112,54 @@ fun CalendarGrid(
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .aspectRatio(1f)
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(CircleShape)
+                                    .then(
+                                        // Today ring indicator
+                                        if (isToday && !isSelected) {
+                                            Modifier.border(
+                                                width = 1.5.dp,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                shape = CircleShape
+                                            )
+                                        } else Modifier
+                                    )
                                     .background(
                                         when {
                                             isSelected -> MaterialTheme.colorScheme.primary
                                             else -> Color.Transparent
-                                        }
+                                        },
+                                        shape = CircleShape
                                     )
-                                    .clickable { onDaySelected(day) },
+                                    .clickable { onDaySelected(day) }
+                                    .padding(vertical = 6.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    // Day number
                                     Text(
                                         text = "${day[Calendar.DAY_OF_MONTH]}",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium,
+                                        fontSize = 13.sp,
+                                        fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Medium,
                                         color = when {
                                             isSelected -> MaterialTheme.colorScheme.onPrimary
                                             isToday -> MaterialTheme.colorScheme.primary
                                             isCurrentMonth -> MaterialTheme.colorScheme.onSurface
-                                            else -> MaterialTheme.colorScheme.outline
-                                        }
+                                            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                                        },
+                                        textAlign = TextAlign.Center
                                     )
 
-                                    if (hasComplaint) {
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                            if (markers != null && markers[0] > 0) {
+                                    // Marker dots
+                                    if (hasActive || hasCompleted) {
+                                        Spacer(modifier = Modifier.height(1.dp))
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            if (hasActive) {
                                                 Box(
                                                     modifier = Modifier
                                                         .size(5.dp)
@@ -134,7 +170,7 @@ fun CalendarGrid(
                                                         )
                                                 )
                                             }
-                                            if (markers != null && markers[1] > 0) {
+                                            if (hasCompleted) {
                                                 Box(
                                                     modifier = Modifier
                                                         .size(5.dp)
@@ -154,45 +190,52 @@ fun CalendarGrid(
                 }
             }
 
-            // Legend
-            Spacer(modifier = Modifier.height(8.dp))
+            // ── Legend ──
+            Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Spacer(modifier = Modifier.width(16.dp))
-                LegendDot(color = MaterialTheme.colorScheme.primary, label = "Aktif")
-                Spacer(modifier = Modifier.width(16.dp))
-                LegendDot(color = Color(0xFF4CAF50), label = "Selesai")
-                Spacer(modifier = Modifier.width(16.dp))
-                LegendDot(color = MaterialTheme.colorScheme.outline, label = "Hari ini", isRing = true)
-                Spacer(modifier = Modifier.width(16.dp))
+                LegendItem(dotColor = MaterialTheme.colorScheme.primary, label = "Aktif")
+                Spacer(modifier = Modifier.width(20.dp))
+                LegendItem(dotColor = Color(0xFF4CAF50), label = "Selesai")
+                Spacer(modifier = Modifier.width(20.dp))
+                LegendRing(color = MaterialTheme.colorScheme.primary, label = "Hari ini")
             }
         }
     }
 }
 
 @Composable
-private fun LegendDot(color: Color, label: String, isRing: Boolean = false) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+private fun LegendItem(dotColor: Color, label: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
         Box(
             modifier = Modifier
                 .size(8.dp)
                 .clip(CircleShape)
-                .then(
-                    if (isRing) Modifier
-                        .background(Color.Transparent)
-                        .then(
-                            Modifier.background(
-                                color = Color.Transparent,
-                                shape = CircleShape
-                            )
-                        )
-                    else Modifier.background(color)
-                )
+                .background(dotColor)
         )
-        Text(label, fontSize = 9.sp, color = MaterialTheme.colorScheme.outline)
+        Text(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.outline)
+    }
+}
+
+@Composable
+private fun LegendRing(color: Color, label: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .border(width = 1.5.dp, color = color, shape = CircleShape)
+        )
+        Text(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.outline)
     }
 }
 
@@ -206,8 +249,16 @@ private fun getCalendarDays(month: Calendar): List<Calendar> {
     val offset = if (dayOfWeek == Calendar.SUNDAY) 6 else dayOfWeek - 2
     cal.add(Calendar.DAY_OF_MONTH, -offset)
 
-    // 6 rows to cover all cases
-    for (i in 0 until 42) {
+    // Calculate the number of rows needed (5 or 6)
+    val firstDayOfWeek = (month.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, 1) }
+    val daysInMonth = firstDayOfWeek.getActualMaximum(Calendar.DAY_OF_MONTH)
+    val firstDayOffset = if (firstDayOfWeek[Calendar.DAY_OF_WEEK] == Calendar.SUNDAY) 6
+                        else firstDayOfWeek[Calendar.DAY_OF_WEEK] - 2
+    val totalCells = firstDayOffset + daysInMonth
+    val rows = if (totalCells > 35) 6 else 5
+    val cellCount = rows * 7
+
+    for (i in 0 until cellCount) {
         days.add((cal.clone() as Calendar))
         cal.add(Calendar.DAY_OF_MONTH, 1)
     }
