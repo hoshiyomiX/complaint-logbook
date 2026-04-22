@@ -78,7 +78,7 @@ fun ComplaintItemCard(
                     }
                     Text(
                         statusLabel,
-                        fontSize = 7.sp,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.Medium,
                         color = statusColor,
                         modifier = Modifier.padding(top = 2.dp)
@@ -147,9 +147,9 @@ fun ComplaintItemCard(
                         color = MaterialTheme.colorScheme.secondaryContainer
                     ) {
                         Text(
-                            "Kmr ${complaint.roomNumber}",
+                            "Villa ${complaint.roomNumber}",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -171,7 +171,7 @@ fun ComplaintItemCard(
                             )
                             Text(
                                 complaint.category,
-                                fontSize = 11.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = categoryFg
                             )
@@ -183,8 +183,8 @@ fun ComplaintItemCard(
 
                 Text(
                     complaint.description,
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
                     color = if (isSelesai || isTidakSelesai)
                         MaterialTheme.colorScheme.outline
                     else MaterialTheme.colorScheme.onSurface,
@@ -205,12 +205,12 @@ fun ComplaintItemCard(
                     )
                     Text(
                         timeFormat.format(Date(complaint.createdAt)),
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.outline
                     )
 
                     complaint.completedAt?.let {
-                        Text("\u2192", fontSize = 10.sp, color = MaterialTheme.colorScheme.outline)
+                        Text("\u2192", fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
                         Icon(
                             Icons.Default.CheckCircle, contentDescription = null,
                             modifier = Modifier.size(11.dp),
@@ -218,7 +218,7 @@ fun ComplaintItemCard(
                         )
                         Text(
                             timeFormat.format(Date(it)),
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             color = Color(0xFF4CAF50)
                         )
                     }
@@ -246,7 +246,7 @@ fun ComplaintItemCard(
                             Text(
                                 if (isOverdue) "Waktu tunda lewat: ${scheduleFormat.format(Date(scheduled))}"
                                 else "Ditunda sampai: ${scheduleFormat.format(Date(scheduled))}",
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = if (isOverdue) Color(0xFFE53935) else Color(0xFFFF9800)
                             )
@@ -327,7 +327,7 @@ private fun statusInfoFor(status: Int): Triple<Color, ImageVector, String> {
         )
         else -> Triple(
             Color.Gray,
-            Icons.Default.Help,
+            Icons.Default.Info,
             "?"
         )
     }

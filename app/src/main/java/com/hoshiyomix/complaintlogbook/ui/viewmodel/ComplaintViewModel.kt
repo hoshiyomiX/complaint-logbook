@@ -69,6 +69,45 @@ data class UiState(
     val tidakSelesaiCount: Int get() = complaints.count { it.status == ComplaintStatus.TIDAK_SELESAI }
     val selesaiCount: Int get() = complaints.count { it.status == ComplaintStatus.SELESAI }
 
+    /** Group filtered complaints by date section headers depending on period view.
+     *  DAY → no grouping (single key = periodLabel)
+     *  WEEK → group by day ("Senin, 21 Apr")
+     *  MONTH → group by week number ("Minggu 1", "Minggu 2", …)
+     *  YEAR → group by month ("Januari", "Februari", …)
+     */
+    val groupedComplaints: LinkedHashMap<String, List<ComplaintEntity>>
+        get() {
+            val result = LinkedHashMap<String, List<ComplaintEntity>>()
+            val items = filteredComplaints
+            if (items.isEmpty()) return result
+
+            when (periodView) {
+                PeriodView.DAY -> {
+                    result[periodLabel] = items
+                }
+                PeriodView.WEEK -> {
+                    val sdf = SimpleDateFormat("EEEE, dd MMM", Locale("id", "ID"))
+                    items.groupBy { sdf.format(Date(it.createdAt)) }
+                        .forEach { (key, list) -> result[key] = list }
+                }
+                PeriodView.MONTH -> {
+                    val sdf = SimpleDateFormat("dd MMM", Locale("id", "ID"))
+                    val cal = Calendar.getInstance()
+                    items.groupBy {
+                        cal.timeInMillis = it.createdAt
+                        val weekOfMonth = cal.get(Calendar.WEEK_OF_MONTH)
+                        "Minggu $weekOfMonth"
+                    }.forEach { (key, list) -> result[key] = list }
+                }
+                PeriodView.YEAR -> {
+                    val sdf = SimpleDateFormat("MMMM", Locale("id", "ID"))
+                    items.groupBy { sdf.format(Date(it.createdAt)) }
+                        .forEach { (key, list) -> result[key] = list }
+                }
+            }
+            return result
+        }
+
     fun getPeriodRange(): Pair<Long, Long> {
         val cal = selectedDate.clone() as Calendar
         return when (periodView) {

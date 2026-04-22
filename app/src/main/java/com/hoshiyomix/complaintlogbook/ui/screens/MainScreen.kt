@@ -187,24 +187,33 @@ fun MainScreen() {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ── Complaint List or Empty State ──
+            // ── Complaint List with section headers or Empty State ── IMPL-003
             if (state.filteredComplaints.isEmpty()) {
                 EmptyState(statusFilter = state.statusFilter)
             } else {
-                state.filteredComplaints.forEach { complaint ->
-                    ComplaintItemCard(
-                        complaint = complaint,
-                        onChangeStatus = { newStatus ->
-                            if (newStatus == ComplaintStatus.TERTUNDA) {
-                                // Show schedule dialog before setting Tertunda
-                                scheduleTarget = complaint
-                            } else {
-                                viewModel.updateStatus(complaint, newStatus)
-                            }
-                        },
-                        onDelete = { viewModel.requestDelete(complaint.id) }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                val groups = state.groupedComplaints
+                val showHeaders = groups.size > 1
+                groups.forEach { (header, complaints) ->
+                    if (showHeaders) {
+                        DateSectionHeader(
+                            label = header,
+                            count = complaints.size
+                        )
+                    }
+                    complaints.forEach { complaint ->
+                        ComplaintItemCard(
+                            complaint = complaint,
+                            onChangeStatus = { newStatus ->
+                                if (newStatus == ComplaintStatus.TERTUNDA) {
+                                    scheduleTarget = complaint
+                                } else {
+                                    viewModel.updateStatus(complaint, newStatus)
+                                }
+                            },
+                            onDelete = { viewModel.requestDelete(complaint.id) }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                 }
             }
 
@@ -492,10 +501,41 @@ private fun FilterableStatCard(
             modifier = Modifier.padding(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(value.toString(), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = color)
-            Text(label, fontSize = 9.sp,
+            Text(value.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = color)
+            Text(label, fontSize = 10.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                 color = if (isSelected) color else MaterialTheme.colorScheme.outline)
+        }
+    }
+}
+
+// ── Date Section Header for grouped lists ── IMPL-003
+@Composable
+private fun DateSectionHeader(label: String, count: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = label,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Surface(
+            shape = RoundedCornerShape(4.dp),
+            color = MaterialTheme.colorScheme.primaryContainer
+        ) {
+            Text(
+                text = "$count",
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
         }
     }
 }
