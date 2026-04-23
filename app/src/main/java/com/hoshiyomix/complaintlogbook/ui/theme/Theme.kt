@@ -43,7 +43,7 @@ private val DarkColors = darkColorScheme(
 )
 
 @Composable
-fun ComplaintLogbookTheme(
+fun MelastiDreamTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors

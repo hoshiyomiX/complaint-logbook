@@ -43,8 +43,8 @@ fun MainScreen() {
     if (state.confirmDeleteId != null) {
         AlertDialog(
             onDismissRequest = viewModel::dismissDelete,
-            title = { Text("Hapus Komplain") },
-            text = { Text("Apakah Anda yakin ingin menghapus komplain ini? Tindakan ini tidak dapat dibatalkan.") },
+            title = { Text("Hapus Task") },
+            text = { Text("Apakah Anda yakin ingin menghapus task ini? Tindakan ini tidak dapat dibatalkan.") },
             confirmButton = {
                 TextButton(
                     onClick = viewModel::confirmDelete,
@@ -127,11 +127,11 @@ fun MainScreen() {
                 title = {
                     Column {
                         Text(
-                            "Complaint Logbook",
+                            "Melasti Dream",
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            "Logbook Komplain Tamu",
+                            "Engineering Tasklist",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -147,7 +147,7 @@ fun MainScreen() {
                 onClick = { viewModel.toggleAddSheet(true) },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Tambah komplain")
+                Icon(Icons.Default.Add, contentDescription = "Tambah task")
             }
         }
     ) { padding ->
@@ -188,7 +188,7 @@ fun MainScreen() {
 
             // ── Complaint count label ──
             Text(
-                "${state.filteredComplaints.size} komplain" +
+                "${state.filteredComplaints.size} task" +
                     when (state.statusFilter) {
                         StatusFilter.BELUM_DIKERJAKAN -> " (belum dikerjakan)"
                         StatusFilter.TERTUNDA -> " (tertunda)"
@@ -480,7 +480,7 @@ private fun PeriodViewTabs(selected: PeriodView, onSelect: (PeriodView) -> Unit)
     }
 }
 
-// ── Stats Row — 5 counters ── IMPL-002
+// ── Stats Row — Total + 2x2 status grid ── IMPL-010
 @Composable
 private fun StatsRow(
     totalCount: Int,
@@ -495,32 +495,37 @@ private fun StatsRow(
         modifier = Modifier.padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Row 1: Total, Belum Dikerjakan, Tertunda
+        // Total — standalone full-width card
+        FilterableStatCard(
+            modifier = Modifier.fillMaxWidth(),
+            value = totalCount, label = "Total",
+            color = MaterialTheme.colorScheme.onSurface,
+            isSelected = selectedFilter == StatusFilter.ALL,
+            onTap = { onFilterTap(StatusFilter.ALL) }
+        )
+
+        // 2x2 grid: Belum, Tertunda / Selesai, Tidak Selesai
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            FilterableStatCard(Modifier.weight(1f), totalCount, "Total",
-                MaterialTheme.colorScheme.onSurface, selectedFilter == StatusFilter.ALL,
-                { onFilterTap(StatusFilter.ALL) })
-            FilterableStatCard(Modifier.weight(1f), belumDikerjakanCount, "Belum",  // abbreviated to fit
+            FilterableStatCard(Modifier.weight(1f), belumDikerjakanCount, "Belum",
                 MaterialTheme.colorScheme.primary, selectedFilter == StatusFilter.BELUM_DIKERJAKAN,
                 { onFilterTap(StatusFilter.BELUM_DIKERJAKAN) })
             FilterableStatCard(Modifier.weight(1f), tertundaCount, "Tertunda",
                 Color(0xFFFF9800), selectedFilter == StatusFilter.TERTUNDA,
                 { onFilterTap(StatusFilter.TERTUNDA) })
         }
-        // Row 2: Tidak Selesai, Selesai
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            FilterableStatCard(Modifier.weight(1f), tidakSelesaiCount, "Tdk Selesai",
-                Color(0xFFE53935), selectedFilter == StatusFilter.TIDAK_SELESAI,
-                { onFilterTap(StatusFilter.TIDAK_SELESAI) })
             FilterableStatCard(Modifier.weight(1f), selesaiCount, "Selesai",
                 Color(0xFF4CAF50), selectedFilter == StatusFilter.SELESAI,
                 { onFilterTap(StatusFilter.SELESAI) })
+            FilterableStatCard(Modifier.weight(1f), tidakSelesaiCount, "Tidak Selesai",
+                Color(0xFFE53935), selectedFilter == StatusFilter.TIDAK_SELESAI,
+                { onFilterTap(StatusFilter.TIDAK_SELESAI) })
         }
     }
 }
@@ -542,14 +547,31 @@ private fun FilterableStatCard(
         ),
         border = if (isSelected) CardDefaults.outlinedCardBorder() else null
     ) {
-        Column(
-            modifier = Modifier.padding(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(value.toString(), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = color)
-            Text(label, fontSize = 11.sp,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) color else MaterialTheme.colorScheme.outline)
+        if (label == "Total") {
+            // Total card — horizontal layout (number + label side by side)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(label, fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isSelected) color else MaterialTheme.colorScheme.onSurface)
+                Text(value.toString(), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = color)
+            }
+        } else {
+            // Status cards — vertical layout (number on top, label below)
+            Column(
+                modifier = Modifier.padding(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(value.toString(), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = color)
+                Text(label, fontSize = 11.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isSelected) color else MaterialTheme.colorScheme.outline)
+            }
         }
     }
 }
@@ -609,11 +631,11 @@ private fun EmptyState(statusFilter: StatusFilter) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 when (statusFilter) {
-                    StatusFilter.BELUM_DIKERJAKAN -> "Tidak ada komplain yang belum dikerjakan"
-                    StatusFilter.TERTUNDA -> "Tidak ada komplain tertunda"
-                    StatusFilter.TIDAK_SELESAI -> "Tidak ada komplain yang tidak selesai"
-                    StatusFilter.SELESAI -> "Belum ada komplain yang selesai"
-                    StatusFilter.ALL -> "Tidak ada komplain di periode ini"
+                    StatusFilter.BELUM_DIKERJAKAN -> "Tidak ada task yang belum dikerjakan"
+                    StatusFilter.TERTUNDA -> "Tidak ada task tertunda"
+                    StatusFilter.TIDAK_SELESAI -> "Tidak ada task yang tidak selesai"
+                    StatusFilter.SELESAI -> "Belum ada task yang selesai"
+                    StatusFilter.ALL -> "Tidak ada task di periode ini"
                 },
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,

@@ -55,7 +55,7 @@ fun AddComplaintSheet(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    "Tambah Komplain Tamu",
+                    "Tambah Task",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -83,7 +83,7 @@ fun AddComplaintSheet(
 
             // Category label
             Text(
-                "Kategori Komplain",
+                "Kategori Task",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.outline
@@ -141,7 +141,7 @@ fun AddComplaintSheet(
                     .height(48.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Simpan Komplain", fontWeight = FontWeight.SemiBold)
+                Text("Simpan Task", fontWeight = FontWeight.SemiBold)
             }
         }
     }

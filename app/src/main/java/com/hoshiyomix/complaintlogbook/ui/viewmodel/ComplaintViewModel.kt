@@ -213,7 +213,7 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
             )
             loadDateMarkers()
             refreshList()
-            showSnackbar("Komplain berhasil ditambahkan")
+            showSnackbar("Task berhasil ditambahkan")
         }
     }
 
@@ -230,10 +230,10 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
             refreshList()
             showSnackbar(
                 when (newStatus) {
-                    ComplaintStatus.BELUM_DIKERJAKAN -> "Komplain dikembalikan ke Belum Dikerjakan"
-                    ComplaintStatus.TERTUNDA -> "Komplain ditandai Tertunda"
-                    ComplaintStatus.SELESAI -> "Komplain ditandai Selesai"
-                    ComplaintStatus.TIDAK_SELESAI -> "Komplain ditandai Tidak Selesai"
+                    ComplaintStatus.BELUM_DIKERJAKAN -> "Task dikembalikan ke Belum Dikerjakan"
+                    ComplaintStatus.TERTUNDA -> "Task ditandai Tertunda"
+                    ComplaintStatus.SELESAI -> "Task ditandai Selesai"
+                    ComplaintStatus.TIDAK_SELESAI -> "Task ditandai Tidak Selesai"
                     else -> "Status diperbarui"
                 }
             )
@@ -255,7 +255,7 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
             repository.deleteById(id)
             loadDateMarkers()
             refreshList()
-            showSnackbar("Komplain berhasil dihapus")
+            showSnackbar("Task berhasil dihapus")
         }
     }
 

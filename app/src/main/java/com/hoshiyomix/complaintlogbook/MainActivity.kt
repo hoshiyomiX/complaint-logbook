@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.hoshiyomix.complaintlogbook.ui.theme.ComplaintLogbookTheme
+import com.hoshiyomix.complaintlogbook.ui.theme.MelastiDreamTheme
 import com.hoshiyomix.complaintlogbook.ui.screens.MainScreen
 
 class MainActivity : ComponentActivity() {
@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            ComplaintLogbookTheme {
+            MelastiDreamTheme {
                 MainScreen()
             }
         }
