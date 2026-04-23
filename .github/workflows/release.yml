@@ -55,27 +55,28 @@ jobs:
       - name: Rename APK
         run: |
           mv app/build/outputs/apk/release/app-release.apk \
-            app/build/outputs/apk/release/complaint-logbook-${{ steps.version.outputs.VERSION }}.apk
+            app/build/outputs/apk/release/melasti-dream-${{ steps.version.outputs.VERSION }}.apk
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "Complaint Logbook v${{ steps.version.outputs.VERSION }}"
+          name: "Melasti Dream v${{ steps.version.outputs.VERSION }}"
           body: |
-            ## Complaint Logbook v${{ steps.version.outputs.VERSION }}
+            ## Melasti Dream - Engineering Tasklist v${{ steps.version.outputs.VERSION }}
 
-            Aplikasi logbook komplain tamu berbasis Android.
+            Aplikasi tasklist engineering berbasis Android.
 
             ### Cara Install
-            1. Download `complaint-logbook-${{ steps.version.outputs.VERSION }}.apk`
+            1. Download `melasti-dream-${{ steps.version.outputs.VERSION }}.apk`
             2. Buka file APK di perangkat Android
             3. Izinkan install dari sumber tidak dikenal (jika diminta)
+            4. APK baru akan menimpa versi lama dan **mempertahankan data** yang sudah ada
 
             ### Fitur
-            - Kalender interaktif dengan dot indikator
             - 4 period view: Harian / Mingguan / Bulanan / Tahunan
-            - Filter status: Semua / Aktif / Selesai
-            - Data persisten via Room database
+            - 4 status task: Belum Dikerjakan / Tertunda / Selesai / Tidak Selesai
+            - Filter status dengan tile counter
+            - Data persisten via Room database (migrasi data otomatis)
 
-          files: app/build/outputs/apk/release/complaint-logbook-${{ steps.version.outputs.VERSION }}.apk
+          files: app/build/outputs/apk/release/melasti-dream-${{ steps.version.outputs.VERSION }}.apk
           generate_release_notes: true
