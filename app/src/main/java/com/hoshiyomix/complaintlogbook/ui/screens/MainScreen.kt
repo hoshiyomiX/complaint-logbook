@@ -480,7 +480,7 @@ private fun PeriodViewTabs(selected: PeriodView, onSelect: (PeriodView) -> Unit)
     }
 }
 
-// ── Stats Row — Total + 2x2 status grid ── IMPL-010
+// ── Stats Row — Total (left, 2-row span) + 2x2 status grid (right) ── IMPL-010
 @Composable
 private fun StatsRow(
     totalCount: Int,
@@ -491,41 +491,51 @@ private fun StatsRow(
     selectedFilter: StatusFilter,
     onFilterTap: (StatusFilter) -> Unit
 ) {
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Total — standalone full-width card
+        // Left: Total — spans 2 rows vertically
         FilterableStatCard(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
             value = totalCount, label = "Total",
             color = MaterialTheme.colorScheme.onSurface,
             isSelected = selectedFilter == StatusFilter.ALL,
             onTap = { onFilterTap(StatusFilter.ALL) }
         )
 
-        // 2x2 grid: Belum, Tertunda / Selesai, Tidak Selesai
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        // Right: 2x2 grid of status cards
+        Column(
+            modifier = Modifier.weight(2f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            FilterableStatCard(Modifier.weight(1f), belumDikerjakanCount, "Belum",
-                MaterialTheme.colorScheme.primary, selectedFilter == StatusFilter.BELUM_DIKERJAKAN,
-                { onFilterTap(StatusFilter.BELUM_DIKERJAKAN) })
-            FilterableStatCard(Modifier.weight(1f), tertundaCount, "Tertunda",
-                Color(0xFFFF9800), selectedFilter == StatusFilter.TERTUNDA,
-                { onFilterTap(StatusFilter.TERTUNDA) })
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterableStatCard(Modifier.weight(1f), selesaiCount, "Selesai",
-                Color(0xFF4CAF50), selectedFilter == StatusFilter.SELESAI,
-                { onFilterTap(StatusFilter.SELESAI) })
-            FilterableStatCard(Modifier.weight(1f), tidakSelesaiCount, "Tidak Selesai",
-                Color(0xFFE53935), selectedFilter == StatusFilter.TIDAK_SELESAI,
-                { onFilterTap(StatusFilter.TIDAK_SELESAI) })
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterableStatCard(Modifier.weight(1f), belumDikerjakanCount, "Belum",
+                    MaterialTheme.colorScheme.primary, selectedFilter == StatusFilter.BELUM_DIKERJAKAN,
+                    { onFilterTap(StatusFilter.BELUM_DIKERJAKAN) })
+                FilterableStatCard(Modifier.weight(1f), tertundaCount, "Tertunda",
+                    Color(0xFFFF9800), selectedFilter == StatusFilter.TERTUNDA,
+                    { onFilterTap(StatusFilter.TERTUNDA) })
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterableStatCard(Modifier.weight(1f), selesaiCount, "Selesai",
+                    Color(0xFF4CAF50), selectedFilter == StatusFilter.SELESAI,
+                    { onFilterTap(StatusFilter.SELESAI) })
+                FilterableStatCard(Modifier.weight(1f), tidakSelesaiCount, "Tidak Selesai",
+                    Color(0xFFE53935), selectedFilter == StatusFilter.TIDAK_SELESAI,
+                    { onFilterTap(StatusFilter.TIDAK_SELESAI) })
+            }
         }
     }
 }
@@ -548,18 +558,20 @@ private fun FilterableStatCard(
         border = if (isSelected) CardDefaults.outlinedCardBorder() else null
     ) {
         if (label == "Total") {
-            // Total card — horizontal layout (number + label side by side)
-            Row(
+            // Total card — centered vertical layout (number on top, label below)
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .fillMaxHeight()
+                    .padding(horizontal = 12.dp, vertical = 14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Text(label, fontSize = 14.sp,
+                Text(value.toString(), fontSize = 28.sp, fontWeight = FontWeight.Bold, color = color)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(label, fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (isSelected) color else MaterialTheme.colorScheme.onSurface)
-                Text(value.toString(), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = color)
             }
         } else {
             // Status cards — vertical layout (number on top, label below)
