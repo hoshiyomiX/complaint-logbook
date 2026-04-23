@@ -361,64 +361,67 @@ private fun PeriodNavBar(
     onToday: () -> Unit,
     onDateTap: () -> Unit
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // Hari Ini button — the only button, navigates to today
-        OutlinedButton(
-            onClick = onToday,
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                contentColor = MaterialTheme.colorScheme.primary
-            ),
-            border = ButtonDefaults.outlinedButtonBorder(enabled = true),
-            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+        // Row 1: Hari Ini button + Period label on same line
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                Icons.Default.Today,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("Hari Ini", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        // Pilih tanggal — tappable text, opens DatePicker
-        Column(
-            modifier = Modifier
-                .clickable { onDateTap() }
-                .padding(horizontal = 4.dp, vertical = 4.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            // Hari Ini button — the only button, navigates to today
+            OutlinedButton(
+                onClick = onToday,
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                    contentColor = MaterialTheme.colorScheme.primary
+                ),
+                border = ButtonDefaults.outlinedButtonBorder(enabled = true),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
             ) {
                 Icon(
-                    Icons.Default.CalendarToday,
-                    contentDescription = "Pilih tanggal",
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    Icons.Default.Today,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
                 )
-                Text(
-                    text = "Pilih tanggal",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Hari Ini", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             }
-            // Show current period as subtitle
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Period label — non-clickable display text
             Text(
                 text = label,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(top = 2.dp)
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        // Row 2: Pilih tanggal — tappable text, opens DatePicker
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier
+                .clickable { onDateTap() }
+                .padding(horizontal = 4.dp, vertical = 2.dp)
+        ) {
+            Icon(
+                Icons.Default.CalendarToday,
+                contentDescription = "Pilih tanggal",
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = "Pilih tanggal",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }
