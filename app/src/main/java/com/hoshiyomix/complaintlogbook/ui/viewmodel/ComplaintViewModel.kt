@@ -192,7 +192,10 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
     }
 
     fun goToday() {
-        selectDate(Calendar.getInstance())
+        val today = Calendar.getInstance()
+        _state.update { it.copy(selectedDate = today) }
+        loadDateMarkers()
+        refreshList()
     }
 
     fun toggleAddSheet(open: Boolean) {

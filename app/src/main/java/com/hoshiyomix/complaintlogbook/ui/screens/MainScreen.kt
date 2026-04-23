@@ -159,6 +159,7 @@ fun MainScreen() {
         ) {
             PeriodNavBar(
                 label = state.periodLabel,
+                periodView = state.periodView,
                 onToday = viewModel::goToday,
                 onDateTap = { showDatePicker = true }
             )
@@ -354,25 +355,34 @@ private fun ScheduleDialog(
     )
 }
 
-// ── Period Navigation Bar ── IMPL-006
+// ── Period Navigation Bar ── IMPL-008/009
 @Composable
 private fun PeriodNavBar(
     label: String,
+    periodView: PeriodView,
     onToday: () -> Unit,
     onDateTap: () -> Unit
 ) {
+    // Dynamic "today" label based on period view
+    val todayLabel = when (periodView) {
+        PeriodView.DAY -> "Hari Ini"
+        PeriodView.WEEK -> "Minggu Ini"
+        PeriodView.MONTH -> "Bulan Ini"
+        PeriodView.YEAR -> "Tahun Ini"
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // Row 1: Hari Ini button + Period label on same line
+        // Row 1: Today button + Period label on same line
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Hari Ini button — the only button, navigates to today
+            // Today button — OutlinedButton, navigates to current period
             OutlinedButton(
                 onClick = onToday,
                 shape = RoundedCornerShape(10.dp),
@@ -380,7 +390,6 @@ private fun PeriodNavBar(
                     containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
                     contentColor = MaterialTheme.colorScheme.primary
                 ),
-                border = ButtonDefaults.outlinedButtonBorder(enabled = true),
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
             ) {
                 Icon(
@@ -389,7 +398,7 @@ private fun PeriodNavBar(
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Hari Ini", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text(todayLabel, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             }
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -403,26 +412,35 @@ private fun PeriodNavBar(
             )
         }
 
-        // Row 2: Pilih tanggal — tappable text, opens DatePicker
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier
-                .clickable { onDateTap() }
-                .padding(horizontal = 4.dp, vertical = 2.dp)
+        // Row 2: Pilih tanggal — pill-shaped card button, different shape from Hari Ini
+        Card(
+            onClick = onDateTap,
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer
+            ),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(
-                Icons.Default.CalendarToday,
-                contentDescription = "Pilih tanggal",
-                modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = "Pilih tanggal",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    Icons.Default.CalendarToday,
+                    contentDescription = "Pilih tanggal",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Text(
+                    text = "Pilih tanggal",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
         }
     }
 }
