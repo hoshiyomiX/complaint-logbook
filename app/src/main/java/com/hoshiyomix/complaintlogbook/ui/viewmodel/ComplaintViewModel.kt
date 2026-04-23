@@ -11,6 +11,7 @@ import com.hoshiyomix.complaintlogbook.data.local.ComplaintStatus
 import com.hoshiyomix.complaintlogbook.data.local.DateMarkerTuple
 import com.hoshiyomix.complaintlogbook.data.repository.ComplaintRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -153,8 +154,11 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
 
+    private var listCollectionJob: Job? = null
+
     init {
         loadDateMarkers()
+        refreshList()
     }
 
     private fun loadDateMarkers() {
@@ -268,8 +272,10 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
     }
 
     private fun refreshList() {
+        // Cancel previous collection to avoid overlapping Flow collectors
+        listCollectionJob?.cancel()
         val (start, end) = _state.value.getPeriodRange()
-        viewModelScope.launch {
+        listCollectionJob = viewModelScope.launch {
             repository.getByDateRange(start, end)
                 .collect { list ->
                     _state.update { it.copy(complaints = list) }
