@@ -61,10 +61,25 @@ fun MainScreen() {
         )
     }
 
-    // Date Picker Dialog
+    // Date Picker Dialog — IMPL-007: selectableDates blocks future dates
     if (showDatePicker) {
+        // Calculate today's end-of-day as the maximum selectable date
+        val todayEndOfDay = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 23)
+            set(Calendar.MINUTE, 59)
+            set(Calendar.SECOND, 59)
+            set(Calendar.MILLISECOND, 999)
+        }.timeInMillis
+
+        val selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                return utcTimeMillis <= todayEndOfDay
+            }
+        }
+
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = state.selectedDate.timeInMillis
+            initialSelectedDateMillis = state.selectedDate.timeInMillis,
+            selectableDates = selectableDates
         )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -339,63 +354,72 @@ private fun ScheduleDialog(
     )
 }
 
-// ── Period Navigation Bar ──
+// ── Period Navigation Bar ── IMPL-006
 @Composable
 private fun PeriodNavBar(
     label: String,
     onToday: () -> Unit,
     onDateTap: () -> Unit
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onDateTap() }
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Default.CalendarToday,
-                contentDescription = "Pilih tanggal",
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = label,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.Center
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
+        // Hari Ini button — the only button, navigates to today
         OutlinedButton(
             onClick = onToday,
-            modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
                 contentColor = MaterialTheme.colorScheme.primary
             ),
             border = ButtonDefaults.outlinedButtonBorder(enabled = true),
-            contentPadding = PaddingValues(vertical = 10.dp)
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
         ) {
             Icon(
                 Icons.Default.Today,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp)
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Hari Ini", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.width(6.dp))
+            Text("Hari Ini", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Pilih tanggal — tappable text, opens DatePicker
+        Column(
+            modifier = Modifier
+                .clickable { onDateTap() }
+                .padding(horizontal = 4.dp, vertical = 4.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    Icons.Default.CalendarToday,
+                    contentDescription = "Pilih tanggal",
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Pilih tanggal",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            // Show current period as subtitle
+            Text(
+                text = label,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(top = 2.dp)
+            )
         }
     }
 }
@@ -501,8 +525,8 @@ private fun FilterableStatCard(
             modifier = Modifier.padding(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(value.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = color)
-            Text(label, fontSize = 10.sp,
+            Text(value.toString(), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = color)
+            Text(label, fontSize = 11.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                 color = if (isSelected) color else MaterialTheme.colorScheme.outline)
         }

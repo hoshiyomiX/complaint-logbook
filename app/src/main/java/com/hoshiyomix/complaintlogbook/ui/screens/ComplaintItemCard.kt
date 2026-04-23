@@ -78,7 +78,7 @@ fun ComplaintItemCard(
                     }
                     Text(
                         statusLabel,
-                        fontSize = 9.sp,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Medium,
                         color = statusColor,
                         modifier = Modifier.padding(top = 2.dp)
