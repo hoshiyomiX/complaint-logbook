@@ -355,7 +355,7 @@ private fun ScheduleDialog(
     )
 }
 
-// ── Period Navigation Bar ── IMPL-008/009
+// ── Period Navigation Bar ── IMPL-008/009/011
 @Composable
 private fun PeriodNavBar(
     label: String,
@@ -363,56 +363,47 @@ private fun PeriodNavBar(
     onToday: () -> Unit,
     onDateTap: () -> Unit
 ) {
-    // Dynamic "today" label based on period view
-    val todayLabel = when (periodView) {
-        PeriodView.DAY -> "Hari Ini"
-        PeriodView.WEEK -> "Minggu Ini"
-        PeriodView.MONTH -> "Bulan Ini"
-        PeriodView.YEAR -> "Tahun Ini"
-    }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // Row 1: Today button + Period label on same line
+        // Row 1: Period label + Reset button on the right
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Today button — OutlinedButton, navigates to current period
-            OutlinedButton(
-                onClick = onToday,
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                    contentColor = MaterialTheme.colorScheme.primary
-                ),
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
-            ) {
-                Icon(
-                    Icons.Default.Today,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(todayLabel, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
             // Period label — non-clickable display text
             Text(
                 text = label,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+
+            // Reset to today — icon button with refresh icon
+            IconButton(
+                onClick = onToday,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    Icons.Default.Refresh,
+                    contentDescription = "Set ulang ke hari ini",
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            Text(
+                text = "Set ulang",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary
             )
         }
 
-        // Row 2: Pilih tanggal — pill-shaped card button, different shape from Hari Ini
+        // Row 2: Pilih tanggal — pill-shaped card button
         Card(
             onClick = onDateTap,
             shape = RoundedCornerShape(20.dp),
