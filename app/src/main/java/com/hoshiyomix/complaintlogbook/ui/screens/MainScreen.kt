@@ -369,68 +369,70 @@ private fun PeriodNavBar(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // Row 1: Period label + Reset button on the right
+        // Row 1: Period label (enlarged) + Reset button on the right
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Period label — non-clickable display text
+            // Period label — enlarged display text
             Text(
                 text = label,
-                fontSize = 16.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
 
-            // Reset to today — icon button with refresh icon
-            IconButton(
+            // Reset to today — single button with icon + text
+            OutlinedButton(
                 onClick = onToday,
-                modifier = Modifier.size(36.dp)
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                    contentColor = MaterialTheme.colorScheme.primary
+                ),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
             ) {
                 Icon(
                     Icons.Default.Refresh,
-                    contentDescription = "Set ulang ke hari ini",
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
                 )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Set kembali ke hari ini", fontSize = 10.sp, fontWeight = FontWeight.Medium)
             }
-            Text(
-                text = "Set ulang",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary
-            )
         }
 
-        // Row 2: Pilih tanggal — pill-shaped card button
-        Card(
-            onClick = onDateTap,
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
-            ),
-            modifier = Modifier.fillMaxWidth()
+        // Row 2: Pilih tanggal — centered pill-shaped card button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            Card(
+                onClick = onDateTap,
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
             ) {
-                Icon(
-                    Icons.Default.CalendarToday,
-                    contentDescription = "Pilih tanggal",
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-                Text(
-                    text = "Pilih tanggal",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        Icons.Default.CalendarToday,
+                        contentDescription = "Pilih tanggal",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Text(
+                        text = "Pilih tanggal",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
             }
         }
     }
@@ -565,15 +567,29 @@ private fun FilterableStatCard(
                     color = if (isSelected) color else MaterialTheme.colorScheme.onSurface)
             }
         } else {
-            // Status cards — vertical layout (number on top, label below)
-            Column(
-                modifier = Modifier.padding(10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            // Status cards — number top-left, label bottom-right
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .padding(10.dp)
             ) {
-                Text(value.toString(), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = color)
-                Text(label, fontSize = 11.sp,
+                // Number — top-left
+                Text(
+                    value.toString(),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = color,
+                    modifier = Modifier.align(Alignment.TopStart)
+                )
+                // Label — bottom-right
+                Text(
+                    label,
+                    fontSize = 11.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) color else MaterialTheme.colorScheme.outline)
+                    color = if (isSelected) color else MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.align(Alignment.BottomEnd)
+                )
             }
         }
     }
