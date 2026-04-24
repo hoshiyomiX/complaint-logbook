@@ -38,6 +38,25 @@ data class UiState(
     val snackbarMessage: String? = null,
     val confirmDeleteId: Long? = null
 ) {
+    /** Whether the selected date falls within the current period (today / this week / this month / this year) */
+    val isToday: Boolean
+        get() {
+            val today = Calendar.getInstance()
+            return when (periodView) {
+                PeriodView.DAY -> selectedDate.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                    selectedDate.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
+                PeriodView.WEEK -> {
+                    val selWeek = (selectedDate.clone() as Calendar).apply { set(Calendar.DAY_OF_WEEK, Calendar.MONDAY) }
+                    val todayWeek = (today.clone() as Calendar).apply { set(Calendar.DAY_OF_WEEK, Calendar.MONDAY) }
+                    selWeek.get(Calendar.YEAR) == todayWeek.get(Calendar.YEAR) &&
+                        selWeek.get(Calendar.WEEK_OF_YEAR) == todayWeek.get(Calendar.WEEK_OF_YEAR)
+                }
+                PeriodView.MONTH -> selectedDate.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                    selectedDate.get(Calendar.MONTH) == today.get(Calendar.MONTH)
+                PeriodView.YEAR -> selectedDate.get(Calendar.YEAR) == today.get(Calendar.YEAR)
+            }
+        }
+
     val filteredComplaints: List<ComplaintEntity>
         get() = when (statusFilter) {
             StatusFilter.ALL -> complaints

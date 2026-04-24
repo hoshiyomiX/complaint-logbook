@@ -160,6 +160,7 @@ fun MainScreen() {
             PeriodNavBar(
                 label = state.periodLabel,
                 periodView = state.periodView,
+                isToday = state.isToday,
                 onToday = viewModel::goToday,
                 onDateTap = { showDatePicker = true }
             )
@@ -360,6 +361,7 @@ private fun ScheduleDialog(
 private fun PeriodNavBar(
     label: String,
     periodView: PeriodView,
+    isToday: Boolean,
     onToday: () -> Unit,
     onDateTap: () -> Unit
 ) {
@@ -369,7 +371,7 @@ private fun PeriodNavBar(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // Row 1: Period label (enlarged) + Reset button on the right
+        // Row 1: Period label (enlarged) + Reset button (only when not today)
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -383,56 +385,57 @@ private fun PeriodNavBar(
                 modifier = Modifier.weight(1f)
             )
 
-            // Reset to today — single button with icon + text
-            OutlinedButton(
-                onClick = onToday,
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                    contentColor = MaterialTheme.colorScheme.primary
-                ),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                Icon(
-                    Icons.Default.Refresh,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Set kembali ke hari ini", fontSize = 10.sp, fontWeight = FontWeight.Medium)
+            // Reset to today — only shown when selected date is NOT today
+            if (!isToday) {
+                OutlinedButton(
+                    onClick = onToday,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Set kembali ke hari ini", fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                }
             }
         }
 
-        // Row 2: Pilih tanggal — centered pill-shaped card button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
+        // Row 2: Pilih tanggal — full-width pill-shaped card button
+        Card(
+            onClick = onDateTap,
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer
+            ),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Card(
-                onClick = onDateTap,
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        Icons.Default.CalendarToday,
-                        contentDescription = "Pilih tanggal",
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Text(
-                        text = "Pilih tanggal",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
+                Icon(
+                    Icons.Default.CalendarToday,
+                    contentDescription = "Pilih tanggal",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Pilih tanggal",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
             }
         }
     }
@@ -571,7 +574,7 @@ private fun FilterableStatCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight()
+                    .defaultMinSize(minHeight = 64.dp)
                     .padding(10.dp)
             ) {
                 // Number — top-left
