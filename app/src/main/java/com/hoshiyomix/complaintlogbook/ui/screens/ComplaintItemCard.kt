@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hoshiyomix.complaintlogbook.data.local.ComplaintEntity
@@ -62,77 +63,41 @@ fun ComplaintItemCard(
                 modifier = Modifier.padding(12.dp),
                 verticalAlignment = Alignment.Top
             ) {
-                // ── Status indicator ──
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(top = 2.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(statusColor.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            statusIcon,
-                            contentDescription = statusLabel,
-                            modifier = Modifier.size(18.dp),
-                            tint = statusColor
-                        )
-                    }
-                    Text(
-                        statusLabel,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = statusColor,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(10.dp))
-
+                // ── Left: Villa number + task content ──
                 Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Villa badge
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer
-                        ) {
-                            Text(
-                                "Villa ${complaint.roomNumber}",
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+                    // Villa number — large, text-wrapped, prominent
+                    Text(
+                        "Villa ${complaint.roomNumber}",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
 
-                        // Category badge
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = categoryBg
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Category badge
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = categoryBg
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    categoryIcon, contentDescription = null,
-                                    modifier = Modifier.size(12.dp),
-                                    tint = categoryFg
-                                )
-                                Text(
-                                    complaint.category,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = categoryFg
-                                )
-                            }
+                            Icon(
+                                categoryIcon, contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = categoryFg
+                            )
+                            Text(
+                                complaint.category,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = categoryFg
+                            )
                         }
                     }
 
@@ -211,6 +176,36 @@ fun ComplaintItemCard(
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                // ── Status indicator — right side ──
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(top = 2.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(statusColor.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            statusIcon,
+                            contentDescription = statusLabel,
+                            modifier = Modifier.size(18.dp),
+                            tint = statusColor
+                        )
+                    }
+                    Text(
+                        statusLabel,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = statusColor,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
             }
 
             // ── Expandable horizontal options row ──
@@ -231,7 +226,7 @@ fun ComplaintItemCard(
                 ) {
                     // Belum Dikerjakan
                     StatusActionChip(
-                        icon = Icons.Default.Pending,
+                        icon = Icons.Default.HourglassTop,
                         label = "Belum",
                         color = MaterialTheme.colorScheme.primary,
                         isSelected = complaint.status == ComplaintStatus.BELUM_DIKERJAKAN,
@@ -262,10 +257,10 @@ fun ComplaintItemCard(
                             expanded = false
                         }
                     )
-                    // Tidak Selesai
+                    // Tidak Selesai → Gagal
                     StatusActionChip(
                         icon = Icons.Default.Cancel,
-                        label = "Batal",
+                        label = "Gagal",
                         color = Color(0xFFE53935),
                         isSelected = complaint.status == ComplaintStatus.TIDAK_SELESAI,
                         onClick = {
@@ -328,7 +323,7 @@ private fun statusInfoFor(status: Int): Triple<Color, ImageVector, String> {
     return when (status) {
         ComplaintStatus.BELUM_DIKERJAKAN -> Triple(
             MaterialTheme.colorScheme.primary,
-            Icons.Default.Pending,
+            Icons.Default.HourglassTop,
             "Belum"
         )
         ComplaintStatus.TERTUNDA -> Triple(
@@ -344,7 +339,7 @@ private fun statusInfoFor(status: Int): Triple<Color, ImageVector, String> {
         ComplaintStatus.TIDAK_SELESAI -> Triple(
             Color(0xFFE53935),
             Icons.Default.Cancel,
-            "Batal"
+            "Gagal"
         )
         else -> Triple(
             Color.Gray,

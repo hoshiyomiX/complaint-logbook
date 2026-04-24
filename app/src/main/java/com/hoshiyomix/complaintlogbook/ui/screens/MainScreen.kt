@@ -623,7 +623,7 @@ private fun EmptyState(statusFilter: StatusFilter) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
                 when (statusFilter) {
-                    StatusFilter.BELUM_DIKERJAKAN -> Icons.Default.Pending
+                    StatusFilter.BELUM_DIKERJAKAN -> Icons.Default.HourglassTop
                     StatusFilter.TERTUNDA -> Icons.Default.Schedule
                     StatusFilter.TIDAK_SELESAI -> Icons.Default.Cancel
                     StatusFilter.SELESAI -> Icons.Default.CheckCircle
