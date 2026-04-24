@@ -52,9 +52,13 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
+      - name: Find universal APK
+        id: apk
+        run: echo "APK_PATH=$(ls app/build/outputs/apk/release/*-universal-*.apk | head -1)" >> $GITHUB_OUTPUT
+
       - name: Rename APK
         run: |
-          mv app/build/outputs/apk/release/app-release.apk \
+          mv "${{ steps.apk.outputs.APK_PATH }}" \
             app/build/outputs/apk/release/melasti-dream-${{ steps.version.outputs.VERSION }}.apk
 
       - name: Create GitHub Release

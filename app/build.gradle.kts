@@ -15,24 +15,41 @@ android {
         targetSdk = 35
         versionCode = 4
         versionName = "1.3.0"
+
+        // Only include needed languages to reduce APK size
+        resourceConfigurations += listOf("id", "en")
     }
 
     signingConfigs {
         create("release") {
+            // CI environment: keystore from env vars (base64 decoded)
             val keystoreFile = System.getenv("KEYSTORE_FILE")
             val keystorePass = System.getenv("KEYSTORE_PASSWORD") ?: ""
             val alias = System.getenv("KEY_ALIAS") ?: ""
             val pass = System.getenv("KEY_PASSWORD") ?: ""
+
             if (keystoreFile != null) {
                 storeFile = file(keystoreFile)
                 storePassword = keystorePass
                 keyAlias = alias
                 keyPassword = pass
+            } else if (file("release.keystore").exists()) {
+                // Local development: use checked-in keystore (gitignored)
+                storeFile = file("release.keystore")
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "melasti123"
+                keyAlias = System.getenv("KEY_ALIAS") ?: "melasti"
+                keyPassword = System.getenv("KEY_PASSWORD") ?: "melasti123"
             }
         }
     }
 
     buildTypes {
+        debug {
+            isMinifyEnabled = false
+            isShrinkResources = false
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -42,6 +59,16 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("release")
+        }
+    }
+
+    // Split APKs by ABI for smaller downloads
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = true
         }
     }
 
@@ -56,6 +83,14 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = false
+        resValues = false
+    }
+
+    // Remove unused resources at build time
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
 }
 

@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   build:
-    name: Debug APK
+    name: Release APK
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -39,17 +39,32 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+      - name: Decode Keystore
+        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --stacktrace
+        env:
+          KEYSTORE_FILE: release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Run Lint
-        run: ./gradlew lintDebug --stacktrace
+        run: ./gradlew lintRelease --stacktrace
 
-      - name: Upload Debug APK
+      - name: Upload Release APK (universal)
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: app-release-universal
+          path: app/build/outputs/apk/release/*-universal-*.apk
+          retention-days: 14
+
+      - name: Upload Release APKs (ABI splits)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-abi-splits
+          path: app/build/outputs/apk/release/*-arm64-v8a-*.apk
           retention-days: 14
 
       - name: Upload Lint Report
@@ -57,5 +72,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lint-report
-          path: app/build/reports/lint-results-debug.html
+          path: app/build/reports/lint-results-release.html
           retention-days: 7
+
+      - name: Report APK Size
+        run: |
+          echo "## APK Sizes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          for f in app/build/outputs/apk/release/*.apk; do
+            SIZE=$(du -h "$f" | cut -f1)
+            NAME=$(basename "$f")
+            echo "- **$NAME**: $SIZE" >> $GITHUB_STEP_SUMMARY
+          done
