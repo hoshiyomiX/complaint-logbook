@@ -187,23 +187,6 @@ fun MainScreen() {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Complaint count label ──
-            Text(
-                "${state.filteredComplaints.size} task" +
-                    when (state.statusFilter) {
-                        StatusFilter.BELUM_DIKERJAKAN -> " (belum dikerjakan)"
-                        StatusFilter.TERTUNDA -> " (tertunda)"
-                        StatusFilter.TIDAK_SELESAI -> " (tidak selesai)"
-                        StatusFilter.SELESAI -> " (selesai)"
-                        StatusFilter.ALL -> ""
-                    },
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             // ── Complaint List with section headers or Empty State ── IMPL-003
             if (state.filteredComplaints.isEmpty()) {
                 EmptyState(statusFilter = state.statusFilter)

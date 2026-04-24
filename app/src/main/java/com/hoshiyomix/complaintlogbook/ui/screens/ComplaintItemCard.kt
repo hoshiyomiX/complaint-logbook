@@ -1,5 +1,8 @@
 package com.hoshiyomix.complaintlogbook.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -39,11 +42,13 @@ fun ComplaintItemCard(
     val isSelesai = complaint.status == ComplaintStatus.SELESAI
     val isTidakSelesai = complaint.status == ComplaintStatus.TIDAK_SELESAI
 
-    // Status menu state — IMPL-003
-    var showStatusMenu by remember { mutableStateOf(false) }
+    // Expanded state — tap card to toggle options row
+    var expanded by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelesai)
@@ -51,12 +56,13 @@ fun ComplaintItemCard(
             else MaterialTheme.colorScheme.surface
         )
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            // ── Status button with dropdown menu ── IMPL-003
-            Box {
+        Column {
+            // ── Main content row ──
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                // ── Status indicator ──
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(top = 2.dp)
@@ -65,8 +71,7 @@ fun ComplaintItemCard(
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
-                            .background(statusColor.copy(alpha = 0.15f))
-                            .clickable { showStatusMenu = true },
+                            .background(statusColor.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -85,221 +90,237 @@ fun ComplaintItemCard(
                     )
                 }
 
-                // ── Status dropdown menu ── IMPL-003
-                DropdownMenu(
-                    expanded = showStatusMenu,
-                    onDismissRequest = { showStatusMenu = false }
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Villa badge
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Text(
+                                "Villa ${complaint.roomNumber}",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+
+                        // Category badge
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = categoryBg
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    categoryIcon, contentDescription = null,
+                                    modifier = Modifier.size(12.dp),
+                                    tint = categoryFg
+                                )
+                                Text(
+                                    complaint.category,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = categoryFg
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        complaint.description,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = if (isSelesai || isTidakSelesai)
+                            MaterialTheme.colorScheme.outline
+                        else MaterialTheme.colorScheme.onSurface,
+                        textDecoration = if (isSelesai) TextDecoration.LineThrough else null
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // ── Created time ──
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Schedule, contentDescription = null,
+                            modifier = Modifier.size(11.dp),
+                            tint = MaterialTheme.colorScheme.outline
+                        )
+                        Text(
+                            timeFormat.format(Date(complaint.createdAt)),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+
+                        complaint.completedAt?.let {
+                            Text("\u2192", fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
+                            Icon(
+                                Icons.Default.CheckCircle, contentDescription = null,
+                                modifier = Modifier.size(11.dp),
+                                tint = Color(0xFF4CAF50)
+                            )
+                            Text(
+                                timeFormat.format(Date(it)),
+                                fontSize = 11.sp,
+                                color = Color(0xFF4CAF50)
+                            )
+                        }
+                    }
+
+                    // ── Schedule display for Tertunda ──
+                    complaint.scheduledAt?.let { scheduled ->
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFFFF9800).copy(alpha = 0.12f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Alarm,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(12.dp),
+                                    tint = Color(0xFFFF9800)
+                                )
+                                val isOverdue = scheduled <= System.currentTimeMillis()
+                                Text(
+                                    if (isOverdue) "Waktu tunda lewat: ${scheduleFormat.format(Date(scheduled))}"
+                                    else "Ditunda sampai: ${scheduleFormat.format(Date(scheduled))}",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (isOverdue) Color(0xFFE53935) else Color(0xFFFF9800)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Expandable horizontal options row ──
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    StatusMenuItem(
+                    // Belum Dikerjakan
+                    StatusActionChip(
                         icon = Icons.Default.Pending,
-                        label = "Belum Dikerjakan",
+                        label = "Belum",
                         color = MaterialTheme.colorScheme.primary,
                         isSelected = complaint.status == ComplaintStatus.BELUM_DIKERJAKAN,
                         onClick = {
                             onChangeStatus(ComplaintStatus.BELUM_DIKERJAKAN)
-                            showStatusMenu = false
+                            expanded = false
                         }
                     )
-                    StatusMenuItem(
+                    // Tertunda
+                    StatusActionChip(
                         icon = Icons.Default.Schedule,
-                        label = "Tertunda",
+                        label = "Tunda",
                         color = Color(0xFFFF9800),
                         isSelected = complaint.status == ComplaintStatus.TERTUNDA,
                         onClick = {
                             onChangeStatus(ComplaintStatus.TERTUNDA)
-                            showStatusMenu = false
+                            expanded = false
                         }
                     )
-                    StatusMenuItem(
+                    // Selesai
+                    StatusActionChip(
                         icon = Icons.Default.CheckCircle,
                         label = "Selesai",
                         color = Color(0xFF4CAF50),
                         isSelected = complaint.status == ComplaintStatus.SELESAI,
                         onClick = {
                             onChangeStatus(ComplaintStatus.SELESAI)
-                            showStatusMenu = false
+                            expanded = false
                         }
                     )
-                    StatusMenuItem(
+                    // Tidak Selesai
+                    StatusActionChip(
                         icon = Icons.Default.Cancel,
-                        label = "Tidak Selesai",
+                        label = "Batal",
                         color = Color(0xFFE53935),
                         isSelected = complaint.status == ComplaintStatus.TIDAK_SELESAI,
                         onClick = {
                             onChangeStatus(ComplaintStatus.TIDAK_SELESAI)
-                            showStatusMenu = false
+                            expanded = false
+                        }
+                    )
+                    // Hapus
+                    StatusActionChip(
+                        icon = Icons.Default.Delete,
+                        label = "Hapus",
+                        color = MaterialTheme.colorScheme.error,
+                        isSelected = false,
+                        onClick = {
+                            onDelete()
+                            expanded = false
                         }
                     )
                 }
-            }
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Room badge
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer
-                    ) {
-                        Text(
-                            "Villa ${complaint.roomNumber}",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
-                    // Category badge
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = categoryBg
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                categoryIcon, contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = categoryFg
-                            )
-                            Text(
-                                complaint.category,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = categoryFg
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    complaint.description,
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp,
-                    color = if (isSelesai || isTidakSelesai)
-                        MaterialTheme.colorScheme.outline
-                    else MaterialTheme.colorScheme.onSurface,
-                    textDecoration = if (isSelesai) TextDecoration.LineThrough else null
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // ── Created time ──
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Schedule, contentDescription = null,
-                        modifier = Modifier.size(11.dp),
-                        tint = MaterialTheme.colorScheme.outline
-                    )
-                    Text(
-                        timeFormat.format(Date(complaint.createdAt)),
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-
-                    complaint.completedAt?.let {
-                        Text("\u2192", fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
-                        Icon(
-                            Icons.Default.CheckCircle, contentDescription = null,
-                            modifier = Modifier.size(11.dp),
-                            tint = Color(0xFF4CAF50)
-                        )
-                        Text(
-                            timeFormat.format(Date(it)),
-                            fontSize = 11.sp,
-                            color = Color(0xFF4CAF50)
-                        )
-                    }
-                }
-
-                // ── Schedule display for Tertunda ── IMPL-003
-                complaint.scheduledAt?.let { scheduled ->
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = Color(0xFFFF9800).copy(alpha = 0.12f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Alarm,
-                                contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = Color(0xFFFF9800)
-                            )
-                            val isOverdue = scheduled <= System.currentTimeMillis()
-                            Text(
-                                if (isOverdue) "Waktu tunda lewat: ${scheduleFormat.format(Date(scheduled))}"
-                                else "Ditunda sampai: ${scheduleFormat.format(Date(scheduled))}",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = if (isOverdue) Color(0xFFE53935) else Color(0xFFFF9800)
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Delete button
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    Icons.Default.Delete, contentDescription = "Hapus",
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.outline
-                )
             }
         }
     }
 }
 
 @Composable
-private fun StatusMenuItem(
+private fun StatusActionChip(
     icon: ImageVector,
     label: String,
     color: Color,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    DropdownMenuItem(
-        text = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = color)
-                Text(
-                    label,
-                    fontSize = 13.sp,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isSelected) color else MaterialTheme.colorScheme.onSurface
-                )
-            }
-        },
-        onClick = onClick,
-        trailingIcon = {
-            if (isSelected) {
-                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = color)
-            }
-        }
-    )
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .background(
+                if (isSelected) color.copy(alpha = 0.15f) else Color.Transparent
+            )
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+    ) {
+        Icon(
+            icon,
+            contentDescription = label,
+            modifier = Modifier.size(20.dp),
+            tint = if (isSelected) color else MaterialTheme.colorScheme.outline
+        )
+        Text(
+            label,
+            fontSize = 10.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            color = if (isSelected) color else MaterialTheme.colorScheme.outline
+        )
+    }
 }
 
 @Composable
