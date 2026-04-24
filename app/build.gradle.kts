@@ -23,23 +23,25 @@ android {
     signingConfigs {
         create("release") {
             // CI environment: keystore from env vars (base64 decoded)
-            val keystoreFile = System.getenv("KEYSTORE_FILE")
-            val keystorePass = System.getenv("KEYSTORE_PASSWORD") ?: ""
-            val alias = System.getenv("KEY_ALIAS") ?: ""
-            val pass = System.getenv("KEY_PASSWORD") ?: ""
+            val keystoreFilePath = System.getenv("KEYSTORE_FILE")
+            val keystorePass = System.getenv("KEYSTORE_PASSWORD")
+            val keyAliasEnv = System.getenv("KEY_ALIAS")
+            val keyPass = System.getenv("KEY_PASSWORD")
 
-            if (keystoreFile != null) {
-                storeFile = file(keystoreFile)
+            if (keystoreFilePath != null && keystorePass != null && keyAliasEnv != null && keyPass != null) {
+                // Full CI signing config from env vars
+                storeFile = file(keystoreFilePath)
                 storePassword = keystorePass
-                keyAlias = alias
-                keyPassword = pass
+                keyAlias = keyAliasEnv
+                keyPassword = keyPass
             } else if (file("release.keystore").exists()) {
-                // Local development: use checked-in keystore (gitignored)
+                // Local development: use local keystore (gitignored)
                 storeFile = file("release.keystore")
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "melasti123"
-                keyAlias = System.getenv("KEY_ALIAS") ?: "melasti"
-                keyPassword = System.getenv("KEY_PASSWORD") ?: "melasti123"
+                storePassword = "melasti123"
+                keyAlias = "melasti"
+                keyPassword = "melasti123"
             }
+            // If neither is available, release build falls back to debug signing
         }
     }
 
@@ -58,7 +60,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            // Use release signing if keystore is available, otherwise fall back to debug
+            signingConfig = if (signingConfigs.getByName("release").storeFile != null) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 

@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   build:
-    name: Release APK
+    name: Build Release APK
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -40,12 +40,20 @@ jobs:
         run: chmod +x gradlew
 
       - name: Decode Keystore
-        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > app/release.keystore
+            echo "Keystore decoded successfully"
+          else
+            echo "No keystore secret found - will use debug signing fallback"
+          fi
+        env:
+          KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
 
       - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace
         env:
-          KEYSTORE_FILE: release.keystore
+          KEYSTORE_FILE: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' && 'release.keystore' || '' }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
@@ -59,6 +67,7 @@ jobs:
           name: app-release-universal
           path: app/build/outputs/apk/release/*-universal-*.apk
           retention-days: 14
+          if-no-files-found: warn
 
       - name: Upload Release APKs (ABI splits)
         uses: actions/upload-artifact@v4
@@ -66,6 +75,7 @@ jobs:
           name: app-release-abi-splits
           path: app/build/outputs/apk/release/*-arm64-v8a-*.apk
           retention-days: 14
+          if-no-files-found: warn
 
       - name: Upload Lint Report
         if: always()
@@ -74,13 +84,17 @@ jobs:
           name: lint-report
           path: app/build/reports/lint-results-release.html
           retention-days: 7
+          if-no-files-found: warn
 
       - name: Report APK Size
+        if: always()
         run: |
           echo "## APK Sizes" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           for f in app/build/outputs/apk/release/*.apk; do
-            SIZE=$(du -h "$f" | cut -f1)
-            NAME=$(basename "$f")
-            echo "- **$NAME**: $SIZE" >> $GITHUB_STEP_SUMMARY
+            if [ -f "$f" ]; then
+              SIZE=$(du -h "$f" | cut -f1)
+              NAME=$(basename "$f")
+              echo "- **$NAME**: $SIZE" >> $GITHUB_STEP_SUMMARY
+            fi
           done

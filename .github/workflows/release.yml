@@ -38,7 +38,9 @@ jobs:
         run: chmod +x gradlew
 
       - name: Decode Keystore
-        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
+        run: echo "$KEYSTORE_B64" | base64 -d > app/release.keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
 
       - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace
