@@ -60,23 +60,23 @@ fun ComplaintItemCard(
         Column {
             // ── Main content row: 3-column layout ──
             Row(
-                modifier = Modifier.padding(12.dp),
+                modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // ── Left: "Villa" label + number on separate lines ──
                 Column(
-                    modifier = Modifier.width(72.dp),
+                    modifier = Modifier.width(80.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         "Villa",
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.outline
                     )
                     Text(
                         complaint.roomNumber,
-                        fontSize = 18.sp,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
@@ -90,22 +90,22 @@ fun ComplaintItemCard(
                 Column(modifier = Modifier.weight(1f)) {
                     // Category badge
                     Surface(
-                        shape = RoundedCornerShape(6.dp),
+                        shape = RoundedCornerShape(4.dp),
                         color = categoryBg
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
                         ) {
                             Icon(
                                 categoryIcon, contentDescription = null,
-                                modifier = Modifier.size(12.dp),
+                                modifier = Modifier.size(10.dp),
                                 tint = categoryFg
                             )
                             Text(
                                 complaint.category,
-                                fontSize = 12.sp,
+                                fontSize = 10.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = categoryFg
                             )
@@ -116,8 +116,8 @@ fun ComplaintItemCard(
 
                     Text(
                         complaint.description,
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp,
+                        fontSize = 15.sp,
+                        lineHeight = 22.sp,
                         color = if (isSelesai || isTidakSelesai)
                             MaterialTheme.colorScheme.outline
                         else MaterialTheme.colorScheme.onSurface,
@@ -196,7 +196,7 @@ fun ComplaintItemCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
                             .background(statusColor.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
@@ -204,7 +204,7 @@ fun ComplaintItemCard(
                         Icon(
                             statusIcon,
                             contentDescription = statusLabel,
-                            modifier = Modifier.size(18.dp),
+                            modifier = Modifier.size(20.dp),
                             tint = statusColor
                         )
                     }
