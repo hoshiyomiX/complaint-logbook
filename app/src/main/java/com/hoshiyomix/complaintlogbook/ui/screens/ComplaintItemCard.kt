@@ -63,19 +63,24 @@ fun ComplaintItemCard(
                 modifier = Modifier.padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // ── Left: Villa number only — wrapped 2 lines ──
+                // ── Left: "Villa" label + number on separate lines ──
                 Column(
                     modifier = Modifier.width(72.dp),
-                    horizontalAlignment = Alignment.Start
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        "Villa ${complaint.roomNumber}",
-                        fontSize = 16.sp,
+                        "Villa",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    Text(
+                        complaint.roomNumber,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = 20.sp
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
