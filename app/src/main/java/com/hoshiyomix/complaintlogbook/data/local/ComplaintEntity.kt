@@ -1,6 +1,7 @@
 package com.hoshiyomix.complaintlogbook.data.local
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /** Status constants for complaint workflow */
@@ -11,7 +12,13 @@ object ComplaintStatus {
     const val TIDAK_SELESAI = 3     // Tidak Selesai — cannot be resolved
 }
 
-@Entity(tableName = "complaints")
+@Entity(
+    tableName = "complaints",
+    indices = [
+        Index(value = ["createdAt"]),
+        Index(value = ["status", "createdAt"])
+    ]
+)
 data class ComplaintEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val roomNumber: String,

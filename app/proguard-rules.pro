@@ -1,8 +1,8 @@
 # ── Project-specific rules ──
--keepattributes *Annotation*
--keep class com.hoshiyomix.complaintlogbook.data.local.** { *; }
+-keepattributes *Annotation*, Signature
 
 # ── Room ──
+-keep class com.hoshiyomix.complaintlogbook.data.local.** { *; }
 -keep class * extends androidx.room.RoomDatabase
 -keep @androidx.room.Entity class *
 -dontwarn androidx.room.paging.**
@@ -15,7 +15,6 @@
 -keepclassmembers class **$WhenMappings {
     <fields>;
 }
--keepclassmembers class kotlin.Metadata { public <methods>; }
 
 # ── Coroutines ──
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
@@ -26,7 +25,8 @@
 -dontwarn kotlinx.coroutines.**
 
 # ── Compose ──
--keep class androidx.compose.** { *; }
+# NOTE: Compose Gradle plugin generates proper R8/ProGuard rules automatically.
+# Do NOT add "-keep class androidx.compose.** { *; }" as it defeats R8 shrinking.
 -dontwarn androidx.compose.**
 
 # ── AndroidX / Lifecycle ──

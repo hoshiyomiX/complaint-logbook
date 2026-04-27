@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.atomic.AtomicLong
 
 enum class PeriodView { DAY, WEEK, MONTH, YEAR }
 
@@ -174,6 +175,7 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
     val state: StateFlow<UiState> = _state.asStateFlow()
 
     private var listCollectionJob: Job? = null
+    private val snackbarIdCounter = AtomicLong(0)
 
     init {
         loadDateMarkers()
@@ -242,6 +244,9 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
 
     /** Update status — for Tertunda, pass scheduledAt millis; otherwise null */
     fun updateStatus(complaint: ComplaintEntity, newStatus: Int, scheduledAt: Long? = null) {
+        // Skip if status unchanged (no-op DB write)
+        if (complaint.status == newStatus) return
+
         viewModelScope.launch {
             val updated = complaint.copy(
                 status = newStatus,
@@ -283,10 +288,14 @@ class ComplaintViewModel(private val repository: ComplaintRepository) : ViewMode
     }
 
     private fun showSnackbar(message: String) {
+        val myId = snackbarIdCounter.incrementAndGet()
         viewModelScope.launch {
             _state.update { it.copy(snackbarMessage = message) }
             kotlinx.coroutines.delay(2500L)
-            _state.update { it.copy(snackbarMessage = null) }
+            // Only clear if no newer snackbar has replaced this one
+            if (snackbarIdCounter.get() == myId) {
+                _state.update { it.copy(snackbarMessage = null) }
+            }
         }
     }
 

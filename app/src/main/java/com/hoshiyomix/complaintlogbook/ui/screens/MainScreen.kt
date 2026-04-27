@@ -1,12 +1,13 @@
 package com.hoshiyomix.complaintlogbook.ui.screens
 
 import java.util.Calendar
+import java.util.TimeZone
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -77,8 +78,13 @@ fun MainScreen() {
             }
         }
 
+        // Fix: DatePicker uses UTC millis, but Calendar uses local timezone.
+        // Convert local→UTC for initial display, and UTC→local for selection.
+        val tz = TimeZone.getDefault()
+        val utcOffset = tz.getOffset(state.selectedDate.timeInMillis).toLong()
+
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = state.selectedDate.timeInMillis,
+            initialSelectedDateMillis = state.selectedDate.timeInMillis + utcOffset,
             selectableDates = selectableDates
         )
         DatePickerDialog(
@@ -86,9 +92,14 @@ fun MainScreen() {
             confirmButton = {
                 TextButton(
                     onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
+                        datePickerState.selectedDateMillis?.let { utcMillis ->
                             val cal = Calendar.getInstance()
-                            cal.timeInMillis = millis
+                            // Convert UTC millis back to local date
+                            cal.timeInMillis = utcMillis - tz.getOffset(utcMillis).toLong()
+                            cal.set(Calendar.HOUR_OF_DAY, 0)
+                            cal.set(Calendar.MINUTE, 0)
+                            cal.set(Calendar.SECOND, 0)
+                            cal.set(Calendar.MILLISECOND, 0)
                             viewModel.selectDate(cal)
                         }
                         showDatePicker = false
@@ -128,12 +139,12 @@ fun MainScreen() {
                     Column {
                         Text(
                             "Melasti Dream",
-                            fontSize = 18.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             "Engineering Tasklist",
-                            fontSize = 12.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Normal,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -153,56 +164,70 @@ fun MainScreen() {
             }
         }
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
+                .padding(padding),
+            contentPadding = PaddingValues(bottom = 80.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
-            PeriodNavBar(
-                label = state.periodLabel,
-                periodView = state.periodView,
-                isToday = state.isToday,
-                onToday = viewModel::goToday,
-                onDateTap = { showDatePicker = true }
-            )
+            item {
+                PeriodNavBar(
+                    label = state.periodLabel,
+                    periodView = state.periodView,
+                    isToday = state.isToday,
+                    onToday = viewModel::goToday,
+                    onDateTap = { showDatePicker = true }
+                )
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            item { Spacer(modifier = Modifier.height(12.dp)) }
 
-            PeriodViewTabs(
-                selected = state.periodView,
-                onSelect = viewModel::setPeriodView
-            )
+            item {
+                PeriodViewTabs(
+                    selected = state.periodView,
+                    onSelect = viewModel::setPeriodView
+                )
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            item { Spacer(modifier = Modifier.height(12.dp)) }
 
             // ── Stats Counters — 5 counters ── IMPL-002
-            StatsRow(
-                totalCount = state.complaints.size,
-                belumDikerjakanCount = state.belumDikerjakanCount,
-                tertundaCount = state.tertundaCount,
-                tidakSelesaiCount = state.tidakSelesaiCount,
-                selesaiCount = state.selesaiCount,
-                selectedFilter = state.statusFilter,
-                onFilterTap = viewModel::setStatusFilter
-            )
+            item {
+                StatsRow(
+                    totalCount = state.complaints.size,
+                    belumDikerjakanCount = state.belumDikerjakanCount,
+                    tertundaCount = state.tertundaCount,
+                    tidakSelesaiCount = state.tidakSelesaiCount,
+                    selesaiCount = state.selesaiCount,
+                    selectedFilter = state.statusFilter,
+                    onFilterTap = viewModel::setStatusFilter
+                )
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            item { Spacer(modifier = Modifier.height(12.dp)) }
 
             // ── Complaint List with section headers or Empty State ── IMPL-003
             if (state.filteredComplaints.isEmpty()) {
-                EmptyState(statusFilter = state.statusFilter)
+                item {
+                    EmptyState(statusFilter = state.statusFilter)
+                }
             } else {
                 val groups = state.groupedComplaints
                 val showHeaders = groups.size > 1
                 groups.forEach { (header, complaints) ->
                     if (showHeaders) {
-                        DateSectionHeader(
-                            label = header,
-                            count = complaints.size
-                        )
+                        item(key = "header-$header") {
+                            DateSectionHeader(
+                                label = header,
+                                count = complaints.size
+                            )
+                        }
                     }
-                    complaints.forEach { complaint ->
+                    items(
+                        items = complaints,
+                        key = { it.id }
+                    ) { complaint ->
                         ComplaintItemCard(
                             complaint = complaint,
                             onChangeStatus = { newStatus ->
@@ -218,8 +243,6 @@ fun MainScreen() {
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(80.dp))
         }
     }
 
@@ -364,7 +387,7 @@ private fun PeriodNavBar(
             // Period label — enlarged display text
             Text(
                 text = label,
-                fontSize = 16.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
@@ -417,7 +440,7 @@ private fun PeriodNavBar(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = "Pilih tanggal",
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
