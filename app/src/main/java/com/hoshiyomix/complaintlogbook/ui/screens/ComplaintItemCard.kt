@@ -63,14 +63,14 @@ fun ComplaintItemCard(
                 modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // ── Left: "Villa" label + number on separate lines ──
+                // ── Left: "Villa" label + number — compact, left-aligned ──
                 Column(
-                    modifier = Modifier.width(80.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier = Modifier.widthIn(max = 60.dp),
+                    horizontalAlignment = Alignment.Start
                 ) {
                     Text(
                         "Villa",
-                        fontSize = 13.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -124,7 +124,7 @@ fun ComplaintItemCard(
                         textDecoration = if (isSelesai) TextDecoration.LineThrough else null
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     // ── Created time ──
                     Row(
