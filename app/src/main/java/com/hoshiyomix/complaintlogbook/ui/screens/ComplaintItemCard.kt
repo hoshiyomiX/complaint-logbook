@@ -37,8 +37,8 @@ fun ComplaintItemCard(
     val categoryIcon = categoryIconFor(complaint.category)
     val (statusColor, statusIcon, statusLabel) = statusInfoFor(complaint.status)
 
-    val timeFormat = SimpleDateFormat("HH:mm, dd MMM yyyy", Locale("id", "ID"))
-    val scheduleFormat = SimpleDateFormat("HH:mm, dd MMM", Locale("id", "ID"))
+    val timeFormat = remember { SimpleDateFormat("HH:mm, dd MMM yyyy", Locale("id", "ID")) }
+    val scheduleFormat = remember { SimpleDateFormat("HH:mm, dd MMM", Locale("id", "ID")) }
 
     val isSelesai = complaint.status == ComplaintStatus.SELESAI
     val isTidakSelesai = complaint.status == ComplaintStatus.TIDAK_SELESAI
@@ -84,7 +84,7 @@ fun ComplaintItemCard(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
                 // ── Center: Category + Description + Time ──
                 Column(modifier = Modifier.weight(1f)) {
@@ -124,7 +124,7 @@ fun ComplaintItemCard(
                         textDecoration = if (isSelesai) TextDecoration.LineThrough else null
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     // ── Created time ──
                     Row(

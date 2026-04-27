@@ -128,11 +128,13 @@ fun MainScreen() {
                     Column {
                         Text(
                             "Melasti Dream",
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             "Engineering Tasklist",
-                            style = MaterialTheme.typography.bodySmall,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Normal,
                             color = MaterialTheme.colorScheme.outline
                         )
                     }
@@ -362,7 +364,7 @@ private fun PeriodNavBar(
             // Period label — enlarged display text
             Text(
                 text = label,
-                fontSize = 20.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)

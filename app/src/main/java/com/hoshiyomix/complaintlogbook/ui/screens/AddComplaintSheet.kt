@@ -32,6 +32,7 @@ fun AddComplaintSheet(
     var category by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var roomError by remember { mutableStateOf(false) }
+    var categoryError by remember { mutableStateOf(false) }
     var descError by remember { mutableStateOf(false) }
 
     ModalBottomSheet(
@@ -82,12 +83,25 @@ fun AddComplaintSheet(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Category label
-            Text(
-                "Kategori Task",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.outline
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    "Kategori Task",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.outline
+                )
+                if (categoryError) {
+                    Text(
+                        "Pilih kategori",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -99,7 +113,7 @@ fun AddComplaintSheet(
                 CATEGORIES.forEach { cat ->
                     FilterChip(
                         selected = category == cat,
-                        onClick = { category = cat },
+                        onClick = { category = cat; categoryError = false },
                         label = { Text(cat, fontSize = 11.sp) },
                         shape = RoundedCornerShape(8.dp)
                     )
@@ -131,7 +145,7 @@ fun AddComplaintSheet(
                 onClick = {
                     when {
                         roomNumber.isBlank() -> roomError = true
-                        category.isBlank() -> {}
+                        category.isBlank() -> categoryError = true
                         description.isBlank() -> descError = true
                         else -> onSubmit(roomNumber.trim(), category, description.trim())
                     }
