@@ -58,25 +58,31 @@ fun ComplaintItemCard(
         )
     ) {
         Column {
-            // ── Main content row ──
+            // ── Main content row: 3-column layout ──
             Row(
                 modifier = Modifier.padding(12.dp),
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // ── Left: Villa number + task content ──
-                Column(modifier = Modifier.weight(1f)) {
-                    // Villa number — large, text-wrapped, prominent
+                // ── Left: Villa number only — wrapped 2 lines ──
+                Column(
+                    modifier = Modifier.width(72.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
                     Text(
                         "Villa ${complaint.roomNumber}",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 20.sp
                     )
+                }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.width(10.dp))
 
+                // ── Center: Category + Description + Time ──
+                Column(modifier = Modifier.weight(1f)) {
                     // Category badge
                     Surface(
                         shape = RoundedCornerShape(6.dp),
@@ -179,10 +185,9 @@ fun ComplaintItemCard(
 
                 Spacer(modifier = Modifier.width(10.dp))
 
-                // ── Status indicator — right side ──
+                // ── Right: Status indicator — centered ──
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(top = 2.dp)
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(
                         modifier = Modifier
