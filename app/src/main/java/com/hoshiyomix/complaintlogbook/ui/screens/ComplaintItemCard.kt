@@ -74,6 +74,7 @@ fun ComplaintItemCard(
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.outline
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         complaint.roomNumber,
                         fontSize = 22.sp,
@@ -131,7 +132,7 @@ fun ComplaintItemCard(
                         textDecoration = if (isSelesai) TextDecoration.LineThrough else null
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
 
                     // ── Created time ──
                     Row(
