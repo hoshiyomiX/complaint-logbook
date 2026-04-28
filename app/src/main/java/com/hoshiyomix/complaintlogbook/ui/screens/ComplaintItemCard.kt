@@ -5,9 +5,11 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -47,9 +49,7 @@ fun ComplaintItemCard(
     var expanded by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { expanded = !expanded },
+        onClick = { expanded = !expanded },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelesai)
@@ -65,7 +65,7 @@ fun ComplaintItemCard(
             ) {
                 // ── Left: "Villa" label + number — compact, left-aligned ──
                 Column(
-                    modifier = Modifier.widthIn(max = 48.dp),
+                    modifier = Modifier.widthIn(max = 56.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
@@ -76,7 +76,7 @@ fun ComplaintItemCard(
                     )
                     Text(
                         complaint.roomNumber,
-                        fontSize = 20.sp,
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
@@ -84,7 +84,14 @@ fun ComplaintItemCard(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(10.dp))
+                // ── Vertical separator between Villa and content ──
+                VerticalDivider(
+                    modifier = Modifier
+                        .height(48.dp)
+                        .padding(horizontal = 6.dp),
+                    thickness = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                )
 
                 // ── Center: Category + Description + Time ──
                 Column(modifier = Modifier.weight(1f)) {
@@ -307,7 +314,11 @@ private fun StatusActionChip(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .clickable { onClick() }
+            .clickable(
+                onClick = onClick,
+                indication = ripple(bounded = true, radius = 24.dp),
+                interactionSource = remember { MutableInteractionSource() }
+            )
             .background(
                 if (isSelected) color.copy(alpha = 0.15f) else Color.Transparent
             )
@@ -375,6 +386,13 @@ private fun categoryColorFor(category: String): Pair<Color, Color> {
         "Table"            -> Color(0xFFF1F8E9) to Color(0xFF33691E)
         "SDB"              -> Color(0xFFECEFF1) to Color(0xFF37474F)
         "Wadrobe"          -> Color(0xFFF9FBE7) to Color(0xFF827717)
+        "Floor Drain"      -> Color(0xFFE0F2F1) to Color(0xFF00695C)
+        "Curtain"          -> Color(0xFFFCE4EC) to Color(0xFFAD1457)
+        "Sofa"             -> Color(0xFFEFEBE9) to Color(0xFF6D4C41)
+        "Electrical / MCB" -> Color(0xFFFFEBEE) to Color(0xFFD32F2F)
+        "Stairs"           -> Color(0xFFECEFF1) to Color(0xFF455A64)
+        "Wall"             -> Color(0xFFF5F5F5) to Color(0xFF757575)
+        "Jetspray"         -> Color(0xFFE1F5FE) to Color(0xFF0288D1)
         else               -> Color(0xFFF5F5F5) to Color(0xFF616161)
     }
 }
@@ -395,6 +413,13 @@ private fun categoryIconFor(category: String): ImageVector {
         "Table"            -> Icons.Default.TableRestaurant
         "SDB"              -> Icons.Default.Lock
         "Wadrobe"          -> Icons.Default.Checkroom
+        "Floor Drain"      -> Icons.Default.Plumbing
+        "Curtain"          -> Icons.Default.Blinds
+        "Sofa"             -> Icons.Default.Weekend
+        "Electrical / MCB" -> Icons.Default.ElectricalServices
+        "Stairs"           -> Icons.Default.Stairs
+        "Wall"             -> Icons.Default.ViewInAr
+        "Jetspray"         -> Icons.Default.WaterDrop
         else               -> Icons.Default.MoreHoriz
     }
 }

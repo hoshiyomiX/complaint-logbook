@@ -3,7 +3,6 @@ package com.hoshiyomix.complaintlogbook.ui.screens
 import java.util.Calendar
 import java.util.TimeZone
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -139,13 +138,13 @@ fun MainScreen() {
                     Column {
                         Text(
                             "Melasti Dream",
-                            fontSize = 16.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             "Engineering Tasklist",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Normal,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.outline
                         )
                     }
@@ -387,7 +386,7 @@ private fun PeriodNavBar(
             // Period label — enlarged display text
             Text(
                 text = label,
-                fontSize = 14.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
@@ -554,7 +553,8 @@ private fun FilterableStatCard(
     onTap: () -> Unit
 ) {
     Card(
-        modifier = modifier.clickable { onTap() },
+        onClick = onTap,
+        modifier = modifier,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) color.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface

@@ -19,7 +19,9 @@ import androidx.compose.ui.unit.sp
 val CATEGORIES = listOf(
     "AC", "Lampu", "Air", "Shower", "Toilet",
     "Washtafel / Sink", "Exhaust Fan", "Stove", "Fridge",
-    "Door", "Chair", "Table", "SDB", "Wadrobe", "Lainnya"
+    "Door", "Chair", "Table", "SDB", "Wadrobe",
+    "Floor Drain", "Curtain", "Sofa", "Electrical / MCB", "Stairs", "Wall", "Jetspray",
+    "Lainnya"
 )
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
