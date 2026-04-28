@@ -5,7 +5,6 @@ import java.util.TimeZone
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -33,6 +32,9 @@ fun MainScreen() {
 
     // Schedule dialog state for Tertunda
     var scheduleTarget by remember { mutableStateOf<ComplaintEntity?>(null) }
+
+    // Accordion: only 1 card expanded at a time
+    var expandedTaskId by remember { mutableStateOf<Long?>(null) }
 
     // Show snackbar when message changes
     LaunchedEffect(state.snackbarMessage) {
@@ -138,14 +140,14 @@ fun MainScreen() {
                     Column {
                         Text(
                             "Melasti Dream",
-                            fontSize = 20.sp,
+                            fontSize = 22.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             "Engineering Tasklist",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.outline
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF546E7A)
                         )
                     }
                 },
@@ -206,7 +208,7 @@ fun MainScreen() {
 
             item { Spacer(modifier = Modifier.height(12.dp)) }
 
-            // ── Complaint List with section headers or Empty State ── IMPL-003
+            // ── Complaint List grouped by Villa, with accordion expand ──
             if (state.filteredComplaints.isEmpty()) {
                 item {
                     EmptyState(statusFilter = state.statusFilter)
@@ -223,22 +225,25 @@ fun MainScreen() {
                             )
                         }
                     }
-                    items(
-                        items = complaints,
-                        key = { it.id }
-                    ) { complaint ->
-                        ComplaintItemCard(
-                            complaint = complaint,
-                            onChangeStatus = { newStatus ->
-                                if (newStatus == ComplaintStatus.TERTUNDA) {
-                                    scheduleTarget = complaint
-                                } else {
-                                    viewModel.updateStatus(complaint, newStatus)
-                                }
-                            },
-                            onDelete = { viewModel.requestDelete(complaint.id) }
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+                    // Group complaints by villa number
+                    val villaGroups = complaints.groupBy { it.roomNumber }
+                    villaGroups.forEach { (villa, villaComplaints) ->
+                        item(key = "villa-${villa}-${villaComplaints.first().id}") {
+                            VillaTaskCard(
+                                complaints = villaComplaints,
+                                expandedTaskId = expandedTaskId,
+                                onExpand = { id -> expandedTaskId = id },
+                                onChangeStatus = { complaint, newStatus ->
+                                    if (newStatus == ComplaintStatus.TERTUNDA) {
+                                        scheduleTarget = complaint
+                                    } else {
+                                        viewModel.updateStatus(complaint, newStatus)
+                                    }
+                                },
+                                onDelete = { id -> viewModel.requestDelete(id) }
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
                     }
                 }
             }
@@ -309,7 +314,7 @@ private fun ScheduleDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 if (mode == "duration") {
-                    Text("Tunda selama:", fontSize = 13.sp, color = MaterialTheme.colorScheme.outline)
+                    Text("Tunda selama:", fontSize = 13.sp, color = Color(0xFF546E7A))
                     Spacer(modifier = Modifier.height(8.dp))
                     // Duration presets
                     val durations = listOf(15 to "15 mnt", 30 to "30 mnt", 60 to "1 jam", 120 to "2 jam", 240 to "4 jam", 480 to "8 jam")
@@ -326,7 +331,7 @@ private fun ScheduleDialog(
                         }
                     }
                 } else {
-                    Text("Tunda sampai jam:", fontSize = 13.sp, color = MaterialTheme.colorScheme.outline)
+                    Text("Tunda sampai jam:", fontSize = 13.sp, color = Color(0xFF546E7A))
                     Spacer(modifier = Modifier.height(12.dp))
                     TimePicker(state = timePickerState)
                 }
@@ -471,7 +476,7 @@ private fun PeriodViewTabs(selected: PeriodView, onSelect: (PeriodView) -> Unit)
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (view == selected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                    contentColor = if (view == selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.outline
+                    contentColor = if (view == selected) MaterialTheme.colorScheme.onPrimary else Color(0xFF546E7A)
                 ),
                 shape = RoundedCornerShape(8.dp),
                 contentPadding = PaddingValues(vertical = 8.dp),
@@ -598,7 +603,7 @@ private fun FilterableStatCard(
                     label,
                     fontSize = 11.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) color else MaterialTheme.colorScheme.outline,
+                    color = if (isSelected) color else Color(0xFF546E7A),
                     modifier = Modifier.align(Alignment.BottomEnd)
                 )
             }
@@ -656,7 +661,7 @@ private fun EmptyState(statusFilter: StatusFilter) {
                 },
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.outline
+                tint = Color(0xFF546E7A)
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -669,7 +674,7 @@ private fun EmptyState(statusFilter: StatusFilter) {
                 },
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.outline,
+                color = Color(0xFF546E7A),
                 textAlign = TextAlign.Center
             )
         }
